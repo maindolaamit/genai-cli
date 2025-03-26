@@ -1,0 +1,6 @@
+requests
+Pillow
+httpx
+argparse
+python-dotenv
+google-genai
