@@ -6,12 +6,12 @@ MODEL_MAP = {
     "default": "gemini-1.5-pro-latest",
     "flash": "gemini-2.0-flash",
     "pro": "gemini-1.5-pro",
-    "vision": "gemini-pro-vision",
-    "imagen": "gemini-1.5-flash",
+    "vision": "gemini-1.0-pro-vision-latest",
+    "imagen": "imagen-3.0-generate-002",
     "unknown-model": "gemini-unknown"
 }
 
-DEFAULT_TEXT_MODEL = "flash"
+DEFAULT_TEXT_MODEL = "default"
 DEFAULT_IMAGE_MODEL = "vision"
 
 def main():
@@ -48,11 +48,22 @@ def main():
     if not model_name:
         model_name = MODEL_MAP["default"] # Fallback to default if no default is set for output type
 
+    print(f"Using model: {model_name}")
     response = interact_with_gemini_api(args.prompt, args.file, args.folder, args.output_type, model_name)
 
     if args.output:
         with open(args.output, 'wb' if args.output_type == 'image' else 'w') as f:
             f.write(response)
+        if args.output_type == 'text':
+            print(f"Text output saved to {args.output}")
+        else:
+            print("File saved successfully")
+    else:
+        if args.output_type == 'text':
+            print(response)
+        else:
+            print("File saved successfully")
+
 
 if __name__ == '__main__':
     main()
