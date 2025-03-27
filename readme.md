@@ -24,10 +24,16 @@ To set up the project, follow these steps:
     cd genai-cli # Navigate into the main project directory
     ```
 
-2. **Run the Installation Script:** Navigate into the `gemini-cli` sub-directory and run the installation script. This will install dependencies, set permissions, and create necessary links/aliases.
+2. **Install Dependencies:** Make sure you have Python 3 installed on your system. Use pip3 to install the required packages:
 
     ```bash
     cd gemini-cli
+    pip3 install -r requirements.txt
+    ```
+
+3. **Run the Installation Script:** Navigate into the `gemini-cli` sub-directory and run the installation script. This will set permissions and create necessary links/aliases.
+
+    ```bash
     chmod +x install.sh
     ./install.sh
     ```
@@ -35,7 +41,7 @@ To set up the project, follow these steps:
     *   It attempts to add an alias to your `~/.zshrc` file and source it. If you use a different shell (like bash), you might need to manually add the alias `alias gemini-cli="python3 ~/.local/bin/gemini-cli"` to your respective configuration file (e.g., `~/.bashrc`) and source it (`source ~/.bashrc`).
     *   Ensure `~/.local/bin` is in your `PATH` environment variable.
 
-3. **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable named `GEMINI_API_KEY`. Add the following line to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`), replacing `YOUR_GEMINI_API_KEY_HERE` with your actual key:
+4. **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable named `GEMINI_API_KEY`. Add the following line to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`), replacing `YOUR_GEMINI_API_KEY_HERE` with your actual key:
 
     ```bash
     export GEMINI_API_KEY='YOUR_GEMINI_API_KEY_HERE'
@@ -44,21 +50,21 @@ To set up the project, follow these steps:
 
 ## Usage
 
-To use the script, run the following command:
+To use the script directly, run the following command:
 
 ```bash
 python3 gemini-cli/src/cli.py -p "Your text prompt here"
 ```
 
-To use the CLI, run the following command:
+To use the CLI with the installed alias, run the following command:
 
 ```bash
-gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/folder" -o "path/s/output/file" -t "text|image" -m "model_code"
+gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context/folder" -o "path/to/output/file" -t "text|image" -m "model_code"
 ```
 
 ### Command-Line Options
 
-- `-p`, `--prompt`: Text prompt to send to the API.
+- `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
 - `-f`, `--file`: Path to a file to attach.
 - `-d`, `--folder`: Path to a folder containing additional context files.
 - `-o`, `--output`: Path where the output will be saved.
@@ -77,14 +83,21 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 
     **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
 
-- Generate Text from a Prompt File and Save to Output File:
+- Generate Text from a Prompt File:
 
     ```bash
-    genai -f prompt.txt --output-file story.txt
-    gemini-cli -p "$(cat prompt.txt)" -o "output.txt"
+    gemini-cli -p ./prompts/test.txt -o output.txt 
     ```
 
-    (Assuming you have a file named prompt.txt with your prompt.)
+    This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
+
+- Using a File as Input for Text Generation:
+
+    ```bash
+    gemini-cli -f ./resources/document.txt -p "Summarize this document"
+    ```
+
+    This attaches the document as context and uses the prompt to specify what to do with it.
 
 - Describe Images:
 
@@ -96,10 +109,10 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 - Generate a Logo from Images in a Folder and Save Image Output:
 
     ```bash
-    genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
+    gemini-cli -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
     ```
 
-    (Replace image-generation-model with the appropriate Gemini image generation model name.)
+    (Replace imagen with the appropriate Gemini image generation model name.)
 
 - Specify a Text Model:
 
@@ -107,7 +120,7 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
     gemini-cli -p "Write a poem about the sea." -o "poem.txt" -m flash-exp
     ```
 
-    (Replace text-advanced-model with a specific Gemini text model name.)
+    (Replace flash-exp with a specific Gemini text model name.)
 
 ## Testing
 
@@ -145,16 +158,16 @@ The test suite consists of four main test files:
 To run the entire test suite, use the following command from the project root:
 
 ```bash
-python -m unittest discover -s gemini-cli/tests
+python3 -m unittest discover -s gemini-cli/tests
 ```
 
 To run a specific test file:
 
 ```bash
-python -m unittest gemini-cli/tests/test_utils.py
-python -m unittest gemini-cli/tests/test_gemini_api.py
-python -m unittest gemini-cli/tests/test_cli.py
-python -m unittest gemini-cli/tests/test_api_interface.py
+python3 -m unittest gemini-cli/tests/test_utils.py
+python3 -m unittest gemini-cli/tests/test_gemini_api.py
+python3 -m unittest gemini-cli/tests/test_cli.py
+python3 -m unittest gemini-cli/tests/test_api_interface.py
 ```
 
 ### Adding New Tests

@@ -38,12 +38,34 @@ def interact_with_gemini_api(prompt, file_path, folder_path, output_type, model_
         # This is a placeholder for folder context processing
         folder_context = f"Using context from folder: {folder_path}\n"
 
-    # Combine prompt with folder context
-    full_prompt = f"{folder_context}{prompt or ''}"
+    # Check if prompt is a file path and read its contents
+    prompt_text = ""
+    if prompt:
+        if os.path.isfile(prompt):
+            logger.info(f"Prompt '{prompt}' is a file path.")
+            try:
+                validate_file_path(prompt)
+                prompt_text = read_file(prompt)
+
+                logger.info(f"Using content from file '{prompt}' as prompt.")
+            except FileNotFoundError as e:
+                logger.error(f"File not found error for prompt file '{prompt}'.")
+                logger.error(f"Error: Prompt file not found: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"An unexpected error occurred while reading prompt file: {e}")
+                return None
+        else:
+            # Use the prompt as-is if it's not a file path
+            prompt_text = prompt
+
+    full_prompt = f"{folder_context}{prompt_text}"
+
+    logger.debug(f"Full prompt content: {full_prompt[0:30]}...")
 
     # Handle file input if provided
     if file_path:
-        validate_file_path(file_path)
+        logger.info(f"File path provided: {file_path}")
         # If generating image output from an image input
         if output_type == 'image':
             # Process the image if needed
@@ -54,11 +76,14 @@ def interact_with_gemini_api(prompt, file_path, folder_path, output_type, model_
                 return response.get('response', b"")  # Assuming image data is in response
             except Exception as e:
                 raise Exception(f"API request failed for image output: {e}") from e
+        else:
+            validate_file_path(file_path) # Validate file path for text input
 
         # If using a file as input for text generation
         try:
             # Pass the resolved model_name directly
             response = gemini_api.send_file_prompt(file_path, model=model_name)
+            logger.info("API call for file prompt successful.")
         except Exception as e:
             raise Exception(f"API request failed for file prompt: {e}") from e
 
@@ -70,6 +95,7 @@ def interact_with_gemini_api(prompt, file_path, folder_path, output_type, model_
     if full_prompt:
         try:
             # Pass the resolved model_name directly
+            logger.info("Sending text prompt to API.")
             response = gemini_api.send_text_prompt(full_prompt, model=model_name)
         except Exception as e:
             raise Exception(f"API request failed for text prompt: {e}") from e
@@ -78,4 +104,5 @@ def interact_with_gemini_api(prompt, file_path, folder_path, output_type, model_
         return response.get('response', 'No response text found')
 
     # If we reach here, there was an error in the inputs
+    logger.error("Neither prompt nor file path provided.")
     raise ValueError("Either a prompt or file path must be provided.")

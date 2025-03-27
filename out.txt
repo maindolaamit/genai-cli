@@ -1,1 +1,1 @@
-Please provide the content of `./prompts/test.txt`. I need the text within the file to be able to help you.  I can't access local files.
+The capital of France is Paris.
