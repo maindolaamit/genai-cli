@@ -1,3 +1,6 @@
+import os
+import logging
+
 def read_file(file_path):
     """Read the contents of a file and return them as a string."""
     with open(file_path, 'r') as file:
@@ -47,3 +50,50 @@ def process_image(image_path):
         base64_encoded = base64.b64encode(image_bytes).decode("utf-8")
         
         return base64_encoded
+
+# --- Colored Logging Setup ---
+
+class ColoredFormatter(logging.Formatter):
+    """Custom formatter to add colors to log levels."""
+    grey = "\x1b[38;20m"
+    blue = "\x1b[34;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    
+    # Define format string including level name and message
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+    FORMATS = {
+        logging.DEBUG: grey + log_format + reset,
+        logging.INFO: blue + log_format + reset,
+        logging.WARNING: yellow + log_format + reset,
+        logging.ERROR: red + log_format + reset,
+        logging.CRITICAL: bold_red + log_format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
+        return formatter.format(record)
+
+def setup_logger(name='gemini_cli', level=logging.INFO):
+    """Sets up and returns a logger with colored output."""
+    logger = logging.getLogger(name)
+    
+    # Prevent adding multiple handlers if logger already exists
+    if logger.hasHandlers():
+        logger.handlers.clear()
+        
+    logger.setLevel(level)
+    
+    # Create console handler with colored formatter
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(ColoredFormatter())
+    
+    logger.addHandler(ch)
+    return logger
+
+# --- End Colored Logging Setup ---

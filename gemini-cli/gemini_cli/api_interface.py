@@ -1,7 +1,9 @@
-import argparse
 import os
-from gemini_api import GeminiAPI
-from utils import validate_file_path, validate_folder_path, read_file, process_image
+from .gemini_api import GeminiAPI # Changed import to relative
+from .utils import validate_file_path, validate_folder_path, read_file, process_image, setup_logger # Changed import to relative
+
+# Initialize logger 
+logger = setup_logger('api_interface')
 
 def interact_with_gemini_api(prompt, file_path, folder_path, output_type, model_name):
     """

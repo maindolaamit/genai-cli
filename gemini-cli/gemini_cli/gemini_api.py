@@ -1,9 +1,11 @@
-import argparse
-import os
 import json
 from google import genai
 from PIL import Image
-from utils import validate_file_path, validate_folder_path, read_file, process_image
+from .utils import validate_file_path, validate_folder_path, read_file, process_image, setup_logger # Changed import to relative
+
+# Initialize logger
+logger = setup_logger('gemini_api')
+
 class GeminiAPI:
     def __init__(self, api_key, base_url=None):
         self.api_key = api_key

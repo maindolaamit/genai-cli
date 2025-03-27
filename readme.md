@@ -2,14 +2,14 @@
 
 # Gemini CLI
 
-Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users s provide text or file prompts, attach files, specify additional context through folder paths, and save outputs in various formats.
+Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users to provide text or file prompts, attach files, specify additional context through folder paths, and save outputs in various formats.
 
 ## Features
 
 - Provide text or file prompts for API interaction.
 - Attach files via command-line parameters.
 - Specify a folder path for additional context.
-- Save output s a specified file path.
+- Save output to a specified file path.
 - Choose between text or image output types.
 - Select different models for generating responses.
 
@@ -44,10 +44,10 @@ To set up the project, follow these steps:
 
 ## Usage
 
-To use the Script, run the following command:
+To use the script, run the following command:
 
 ```bash
-python gemini-cli/src/cli.py -p "Your text prompt here"
+python3 gemini-cli/src/cli.py -p "Your text prompt here"
 ```
 
 To use the CLI, run the following command:
@@ -58,12 +58,12 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 
 ### Command-Line Options
 
-- `-p`, `--prompt`: Text prompt s send s the API.
-- `-f`, `--file`: Path s a file s attach.
-- `-d`, `--folder`: Path s a folder containing additional context files.
+- `-p`, `--prompt`: Text prompt to send to the API.
+- `-f`, `--file`: Path to a file to attach.
+- `-d`, `--folder`: Path to a folder containing additional context files.
 - `-o`, `--output`: Path where the output will be saved.
 - `-t`, `--output-type`: Specify the output type (`text` or `image`).
-- `-m`, `--model`: Select the model s use for generating responses.
+- `-m`, `--model`: Select the model to use for generating responses.
 
 ### Use Cases
 
@@ -77,7 +77,7 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 
     **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
 
-- Generate Text from a Prompt File and Save s Output File:
+- Generate Text from a Prompt File and Save to Output File:
 
     ```bash
     genai -f prompt.txt --output-file story.txt
@@ -96,8 +96,7 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 - Generate a Logo from Images in a Folder and Save Image Output:
 
     ```bash
-
-genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
+    genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
     ```
 
     (Replace image-generation-model with the appropriate Gemini image generation model name.)
@@ -112,7 +111,7 @@ genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o l
 
 ## Testing
 
-This project includes a comprehensive test suite s ensure all components function correctly. The tests use Python's `unittest` framework with mocking s avoid actual API calls during testing.
+This project includes a comprehensive test suite to ensure all components function correctly. The tests use Python's `unittest` framework with mocking to avoid actual API calls during testing.
 
 ### Test Files
 
@@ -143,7 +142,7 @@ The test suite consists of four main test files:
 
 ### Running Tests
 
-To run the entire test suite![alt text](diagram.png) ![alt text](<Screenshot 2025-02-17 at 18.17.33.png>) ![alt text](image-1.png) ![alt text](image-2.png) ![alt text](image-3.png), use the following command from the project root:
+To run the entire test suite, use the following command from the project root:
 
 ```bash
 python -m unittest discover -s gemini-cli/tests
@@ -160,12 +159,12 @@ python -m unittest gemini-cli/tests/test_api_interface.py
 
 ### Adding New Tests
 
-When adding new features s the CLI, please ensure:
+When adding new features to the CLI, please ensure:
 
 1. Write tests for any new functionality
 2. Use mocking for external dependencies
 3. Run the test suite before submitting a pull request
-4. Ensure existing tests continue s pass
+4. Ensure existing tests continue to pass
 
 ## Contributing
 
