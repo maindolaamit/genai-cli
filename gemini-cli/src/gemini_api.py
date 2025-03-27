@@ -43,18 +43,18 @@ class GeminiAPI:
         try:
             # Load the image file
             image = Image.open(file_path)
-
-            # Use the provided model string directly
-            model_obj = self.client.GenerativeModel(model)
-
-            # Generate content using the model with the image
-            # Assuming the prompt should accompany the image for vision models
-            # Adjust based on actual API requirements. If no text prompt needed, just pass the image.
-            # Example: response = model_obj.generate_content(image)
-            # Example with prompt: response = model_obj.generate_content(["Describe this image:", image])
-            # Using a generic prompt for now, adjust as needed.
-            response = model_obj.generate_content(["Describe the content of the image.", image])
-
+            
+            # Prepare content parts (image with optional description)
+            parts = [
+                {"text": "Describe the content of the image:"},
+                {"image": {"data": process_image(file_path)}}
+            ]
+            
+            # Use the models.generate_content method from the client directly
+            response = self.client.models.generate_content(
+                model=model,
+                contents=parts
+            )
 
             # Return the response in a consistent format
             return {

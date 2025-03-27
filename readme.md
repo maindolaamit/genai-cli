@@ -89,8 +89,8 @@ gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/f
 - Describe Images:
 
     ```bash
-    genai -p "Describe these images in detail." -i image1.jpg image2.png
-    genai -p "Describe these images in detail." -i image1.jpg image2.png -o "output.txt"
+    gemini-cli -p "describe the image in detail" -i ./resources/image-1.png
+    gemini-cli -p "Describe these images in detail." -i ./resources/image-1.jpg ./resources/image-2.png -o "image-description.txt"
     ```
 
 - Generate a Logo from Images in a Folder and Save Image Output:
@@ -143,7 +143,7 @@ The test suite consists of four main test files:
 
 ### Running Tests
 
-To run the entire test suite, use the following command from the project root:
+To run the entire test suite![alt text](diagram.png) ![alt text](<Screenshot 2025-02-17 at 18.17.33.png>) ![alt text](image-1.png) ![alt text](image-2.png) ![alt text](image-3.png), use the following command from the project root:
 
 ```bash
 python -m unittest discover -s gemini-cli/tests

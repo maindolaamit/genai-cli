@@ -24,9 +24,26 @@ def load_environment_variable(var_name):
     return value
 
 def process_image(image_path):
-    """Process an image file (e.g., resize, convert) if needed."""
+    """Process an image file and convert it to base64 for the Gemini API."""
+    import base64
     from PIL import Image
+    import io
+    
+    # Open and process the image
     with Image.open(image_path) as img:
-        # Example processing: resize the image
-        img = img.resize((256, 256))
-        return img
+        # Convert to RGB if it's not already (e.g., if it's RGBA)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        
+        # Resize image if needed
+        # img = img.resize((800, 800))  # Optional resize
+        
+        # Convert to bytes
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG")
+        image_bytes = buffer.getvalue()
+        
+        # Encode to base64
+        base64_encoded = base64.b64encode(image_bytes).decode("utf-8")
+        
+        return base64_encoded
