@@ -2,14 +2,14 @@
 
 # Gemini CLI
 
-Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users to provide text or file prompts, attach files, specify additional context through folder paths, and save outputs in various formats.
+Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users s provide text or file prompts, attach files, specify additional context through folder paths, and save outputs in various formats.
 
 ## Features
 
 - Provide text or file prompts for API interaction.
 - Attach files via command-line parameters.
 - Specify a folder path for additional context.
-- Save output to a specified file path.
+- Save output s a specified file path.
 - Choose between text or image output types.
 - Select different models for generating responses.
 
@@ -17,60 +17,35 @@ Gemini CLI is a command-line interface for interacting with the Gemini API. This
 
 To set up the project, follow these steps:
 
-1.  **Clone the Repository:** First, ensure you have `git` and `pip` installed on your system. Then, open your terminal and run the following commands to
+1. **Clone the Repository:** First, ensure you have `git` installed on your system. Then, open your terminal and run the following commands:
+
     ```bash
     git clone https://github.com/yourusername/gemini-cli.git
-    cd gemini-cli
-    pip install -r requirements.txt
+    cd genai-cli # Navigate into the main project directory
     ```
 
-2.  **Install Dependencies:** Navigate to the cloned directory and install the required Python packages using `pip`. This will install all necessary dependencies listed in `requirements.txt`.
+2. **Run the Installation Script:** Navigate into the `gemini-cli` sub-directory and run the installation script. This will install dependencies, set permissions, and create necessary links/aliases.
+
     ```bash
     cd gemini-cli
-    pip3 install -r requirements.txt
+    chmod +x install.sh
+    ./install.sh
     ```
+    *   The script will create a log file named `installation.log`.
+    *   It attempts to add an alias to your `~/.zshrc` file and source it. If you use a different shell (like bash), you might need to manually add the alias `alias gemini-cli="python3 ~/.local/bin/gemini-cli"` to your respective configuration file (e.g., `~/.bashrc`) and source it (`source ~/.bashrc`).
+    *   Ensure `~/.local/bin` is in your `PATH` environment variable.
 
-3.  **Make the Script Executable:** Grant execute permissions to the script:
-
-    ```bash
-    chmod +x gemini-cli/src/cli.py
-    ```
-
-4.  **Create a Symbolic Link:** Create a symbolic link in `~/.local/bin` to make the script accessible from your `PATH`. Ensure `~/.local/bin` is in your `PATH` environment variable (usually it is by default on macOS).
-
-    ```bash
-    ln -s $(pwd)/gemini-cli/src/cli.py ~/.local/bin/gemini-cli
-    ```
-
-5.  **Create command in ~/.local/bin:** If you want to run the command from anywhere, create a command in `~/.local/bin`:
-
-    ```bash
-    echo 'alias gemini-cli="python ~/.local/bin/cli.py"' >> ~/.zshrc
-    ```
-
-    Then, source your `.zshrc` file to apply the changes:
-
-    ```bash
-    source ~/.zshrc
-    ```
-
-6.  **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable as `GEMINI_API_KEY` in your `.zshrc` file (or your shell's configuration file, e.g., `.bash_profile`, `.bashrc` if you are using bash).
-
-    Open your `.zshrc` file in a text editor:
-
-    ```bash
-    nano ~/.zshrc
-    ```
-
-    Add the following line, replacing `YOUR_GEMINI_API_KEY_HERE` with your actual API key:
+3. **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable named `GEMINI_API_KEY`. Add the following line to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`), replacing `YOUR_GEMINI_API_KEY_HERE` with your actual key:
 
     ```bash
     export GEMINI_API_KEY='YOUR_GEMINI_API_KEY_HERE'
     ```
+    *   After adding the key, restart your terminal or source your configuration file again (e.g., `source ~/.zshrc`).
 
 ## Usage
 
 To use the Script, run the following command:
+
 ```bash
 python gemini-cli/src/cli.py -p "Your text prompt here"
 ```
@@ -78,49 +53,57 @@ python gemini-cli/src/cli.py -p "Your text prompt here"
 To use the CLI, run the following command:
 
 ```bash
-gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context/folder" -o "path/to/output/file" -t "text|image" -m "model_code"
+gemini-cli -p "Your text prompt here" -f "path/s/your/file" -d "path/s/context/folder" -o "path/s/output/file" -t "text|image" -m "model_code"
 ```
 
 ### Command-Line Options
 
-- `-p`, `--prompt`: Text prompt to send to the API.
-- `-f`, `--file`: Path to a file to attach.
-- `-d`, `--folder`: Path to a folder containing additional context files.
+- `-p`, `--prompt`: Text prompt s send s the API.
+- `-f`, `--file`: Path s a file s attach.
+- `-d`, `--folder`: Path s a folder containing additional context files.
 - `-o`, `--output`: Path where the output will be saved.
 - `-t`, `--output-type`: Specify the output type (`text` or `image`).
-- `-m`, `--model`: Select the model to use for generating responses.
-
+- `-m`, `--model`: Select the model s use for generating responses.
 
 ### Use Cases
+
 - Generate Text from a Prompt:
+
     ```bash
-    gemini-cli "What is the capital of France?" 
-    gemini-cli -p "What is the capital of France?" 
-    gemini-cli -p "What is the capital of France?" -o "output.txt"
-    gemini-cli -p "What is the capital of France?" -o "output.txt" -t "text" -m "text-advanced-model"
+    gemini-cli -p "What is the capital of France?"
+    gemini-cli -o "output.txt" -p "What is the capital of France?"
+    gemini-cli -o "output.txt" -t "text" -m "pro" -p "What is the capital of France?"
     ```
 
-- Generate Text from a Prompt File and Save to Output File:
+    **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
+
+- Generate Text from a Prompt File and Save s Output File:
+
     ```bash
     genai -f prompt.txt --output-file story.txt
-    gemini-cli -p "$(cat prompt.txt)" -o "output.txt" 
+    gemini-cli -p "$(cat prompt.txt)" -o "output.txt"
     ```
+
     (Assuming you have a file named prompt.txt with your prompt.)
 
 - Describe Images:
+
     ```bash
     genai -p "Describe these images in detail." -i image1.jpg image2.png
     genai -p "Describe these images in detail." -i image1.jpg image2.png -o "output.txt"
     ```
 
 - Generate a Logo from Images in a Folder and Save Image Output:
+
     ```bash
+
 genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
     ```
 
     (Replace image-generation-model with the appropriate Gemini image generation model name.)
 
 - Specify a Text Model:
+
     ```bash
     gemini-cli -p "Write a poem about the sea." -o "poem.txt" -m flash-exp
     ```
@@ -129,7 +112,7 @@ genai -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o l
 
 ## Testing
 
-This project includes a comprehensive test suite to ensure all components function correctly. The tests use Python's `unittest` framework with mocking to avoid actual API calls during testing.
+This project includes a comprehensive test suite s ensure all components function correctly. The tests use Python's `unittest` framework with mocking s avoid actual API calls during testing.
 
 ### Test Files
 
@@ -177,12 +160,12 @@ python -m unittest gemini-cli/tests/test_api_interface.py
 
 ### Adding New Tests
 
-When adding new features to the CLI, please ensure:
+When adding new features s the CLI, please ensure:
 
 1. Write tests for any new functionality
 2. Use mocking for external dependencies
 3. Run the test suite before submitting a pull request
-4. Ensure existing tests continue to pass
+4. Ensure existing tests continue s pass
 
 ## Contributing
 
