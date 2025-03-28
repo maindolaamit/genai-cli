@@ -98,7 +98,7 @@ File size is limited to 20MB for all formats.
 - Generate Text from a Prompt File:
 
     ```bash
-    gemini-cli -p ./prompts/test.txt -o output.txt 
+    gemini-cli -p ./prompts/test.txt -o output.txt
     ```
 
     This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
@@ -142,6 +142,23 @@ File size is limited to 20MB for all formats.
     gemini-cli -p "Write a technical analysis of quantum computing" -m flash -o "analysis.txt"
     gemini-cli -i ./resources/robot.jpeg -p "Describe this image" -m vision
     ```
+
+- Summarize transactions from images in a folder and output in Markdown table format:
+
+    Command:
+    ````bash
+    gemini-cli -o hisaab.txt -f "trx*.png" -i ./resources  -p "summarize total transactions and retun in md table format"
+    ````
+
+    Expected Output in `hisaab.txt`:
+    ````text
+    | Description | Amount |
+    |---|---|
+    | Sent Amount | $3739.73 |
+    | Received Amount | ₹333,580.18 |
+    | Exchange Rate | ₹89.20 |
+    | Coupon Savings | ₹7778.64 |
+    ````
 
 ## Testing
 
