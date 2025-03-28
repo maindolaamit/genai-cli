@@ -92,7 +92,8 @@ class GeminiAPI:
                 'error': str(e)
             }
 
-    def send_file_prompt(self, file_path, model='gemini-pro-vision'): # Default model string
+    # Add 'prompt' and 'output_type' to the signature
+    def send_file_prompt(self, file_path, prompt=None, model='gemini-pro-vision', output_type='text'): 
         """Sends a file (image) prompt to the specified Gemini model."""
         try:
             # Check if model is for image generation
@@ -156,11 +157,24 @@ class GeminiAPI:
             else:
                 # For vision models (like gemini-pro-vision)
                 # Prepare content parts (image with optional description)
-                parts = [
-                    {"text": "Describe the content of the image:"},
-                    {"image": {"data": process_image(file_path)}}
-                ]
+                parts = []
+                # Use the provided prompt text if available
+                if prompt:
+                    parts.append({"text": prompt})
+                else:
+                    # Default text if no prompt is given
+                    parts.append({"text": "Describe the content of the image:"}) 
                 
+                # Add the image data (assuming process_image handles conversion)
+                # You might need to adjust how image data is prepared based on google-genai requirements
+                # For google-genai, you typically pass the PIL Image object directly
+                try:
+                    img = Image.open(file_path)
+                    parts.append(img) # Pass the PIL image object
+                except Exception as img_err:
+                    logger.error(f"Error opening or processing image {file_path}: {img_err}")
+                    raise Exception(f"Failed to load image {file_path}") from img_err
+
                 # Use the models.generate_content method from the client directly
                 response = self.client.models.generate_content(
                     model=model,

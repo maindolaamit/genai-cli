@@ -54,7 +54,11 @@ gemini-cli -p "Your text prompt here" -i "path/to/your/file_or_folder" -f "*.jpg
 -   `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
 -   `-i`, `--input`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
 -   `-f`, `--filter`: Filter pattern for files when `-i` points to a folder (e.g., `"*.txt"`, `"*.jpg"`).
--   `-o`, `--output`: Optional path where the output will be saved. If omitted, a filename is generated automatically.
+-   `-o`, `--output`: Optional path where the output will be saved:
+     - If omitted: Text outputs are only displayed on screen, non-text outputs are saved with auto-generated filenames
+     - If `-o` with no value: Save with auto-generated filename
+     - If `-o folder_path/`: Save file with auto-generated name in the specified directory
+     - If `-o filename`: Save output to the specified filename
 -   `-t`, `--output-type`: Specify the output type (`text` or `image`). If omitted, it's inferred from the selected model's default.
 -   `-m`, `--model`: Select the model alias to use for generating responses (e.g., "default", "flash", "pro", "vision", "imagen"). See `MODEL_MAP` in [`gemini-cli/gemini_cli/cli.py`](gemini-cli/gemini_cli/cli.py) for available aliases.
 

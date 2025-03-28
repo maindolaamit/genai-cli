@@ -75,8 +75,18 @@ MODEL_MAP = {
 # Default model alias if -m is not specified
 DEFAULT_MODEL_ALIAS = "default"
 
-def generate_output_filename(model_name, prompt_text, output_type):
-    """Generates a filename based on prompt, model, timestamp, and output type."""
+def generate_output_filename(model_name, prompt_text, output_type, output_dir=None):
+    """Generates a filename based on prompt, model, timestamp, and output type.
+    
+    Args:
+        model_name: The name of the model used
+        prompt_text: Text of the prompt (for naming)
+        output_type: Type of output (text, image, etc.)
+        output_dir: Optional directory path to prepend
+        
+    Returns:
+        Full path to the generated filename
+    """
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     
     # Extract first four words from prompt, lowercase, kebab-case
@@ -93,7 +103,13 @@ def generate_output_filename(model_name, prompt_text, output_type):
     # Sanitize model name for filename
     safe_model_name = model_name.replace('/', '_').replace('.', '_')
 
-    return f"{kebab_prefix}_{safe_model_name}_{timestamp}.{extension}"
+    filename = f"{kebab_prefix}_{safe_model_name}_{timestamp}.{extension}"
+    
+    # If output_dir is provided, join with the filename
+    if output_dir:
+        return os.path.join(output_dir, filename)
+    else:
+        return filename
 
 def main():
     parser = argparse.ArgumentParser(description='Interact with the Gemini API.')
@@ -102,12 +118,17 @@ def main():
     parser.add_argument('-p', '--prompt', type=str, help='Text prompt or path to a file containing the prompt.')
     parser.add_argument('-i', '--input', type=str, help='Path to an input file or folder.')
     parser.add_argument('-f', '--filter', type=str, help='Filter pattern for files in a folder (e.g., "*.txt", "*.jpg").')
-    # Output is optional
-    parser.add_argument('-o', '--output', type=str, default=None, help='Optional path to save the output file. If omitted, a filename is generated.')
+    
+    # Modified output argument to handle empty flag case
+    parser.add_argument('-o', '--output', nargs='?', const='', default=None, 
+                      help='Optional path to save the output file. If flag is present with no value, a filename is auto-generated.')
+    
     # Output type default is now None, will be inferred
-    parser.add_argument('-t', '--output-type', choices=['text', 'image'], default=None, help='Type of output to generate (default: inferred from model).')
+    parser.add_argument('-t', '--output-type', choices=['text', 'image'], default=None, 
+                      help='Type of output to generate (default: inferred from model).')
     # Model default uses the constant
-    parser.add_argument('-m', '--model', type=str, default=DEFAULT_MODEL_ALIAS, help=f'Model alias to use (default: "{DEFAULT_MODEL_ALIAS}"). Choices: {", ".join(MODEL_MAP.keys())}')
+    parser.add_argument('-m', '--model', type=str, default=DEFAULT_MODEL_ALIAS, 
+                      help=f'Model alias to use (default: "{DEFAULT_MODEL_ALIAS}"). Choices: {", ".join(MODEL_MAP.keys())}')
 
     args = parser.parse_args()
 
@@ -177,39 +198,84 @@ def main():
         # --- Output Handling ---
         output_path = args.output
         is_binary_output = isinstance(response_data, bytes)
+        
+        # For text output: print to console by default, save to file ONLY if -o is specified
+        if output_type == 'text' and not is_binary_output:
+            # Always print text output to console
+            print(response_data)
+            logger.info("Text output printed to console")
+            
+            # Only save to file if -o was provided (either empty or with value)
+            if output_path is not None:
+                # Determine the actual output path
+                if output_path == '':
+                    # Empty -o flag, generate default filename
+                    output_path = generate_output_filename(model_name, prompt_text, output_type)
+                    logger.info(f"Empty output path specified, using generated filename: {output_path}")
+                elif os.path.isdir(output_path):
+                    # If a directory was provided, generate filename in that directory
+                    output_path = generate_output_filename(model_name, prompt_text, output_type, output_path)
+                    logger.info(f"Directory specified for output, using: {output_path}")
+                # Otherwise, use the provided path as-is
+                
+                # Ensure directory exists
+                output_dir = os.path.dirname(output_path)
+                if output_dir and not os.path.exists(output_dir):
+                    try:
+                        os.makedirs(output_dir)
+                        logger.info(f"Created output directory: {output_dir}")
+                    except OSError as e:
+                        logger.error(f"Failed to create output directory {output_dir}: {e}")
+                        parser.exit(1)
+                
+                # Save the file
+                try:
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(response_data)
+                    logger.info(f"Text output saved to {output_path}")
+                except IOError as e:
+                    logger.error(f"Failed to write output to {output_path}: {e}")
+                    parser.exit(1)
+        else:
+            # For non-text outputs (binary): always save to file
+            if output_path is None:
+                # No -o flag, generate default filename
+                output_path = generate_output_filename(model_name, prompt_text, output_type)
+                logger.info(f"No output path specified, saving to generated filename: {output_path}")
+            elif output_path == '':
+                # Empty -o flag, generate default filename
+                output_path = generate_output_filename(model_name, prompt_text, output_type)
+                logger.info(f"Empty output path specified, using generated filename: {output_path}")
+            elif os.path.isdir(output_path):
+                # If a directory was provided, generate filename in that directory
+                output_path = generate_output_filename(model_name, prompt_text, output_type, output_path)
+                logger.info(f"Directory specified for output, using: {output_path}")
+            # Otherwise, use the provided path as-is
 
-        if output_path is None:
-            # Generate filename if output path is not provided
-            output_path = generate_output_filename(model_name, prompt_text, output_type)
-            logger.info(f"Output path not specified, saving to generated filename: {output_path}")
+            # Ensure directory exists
+            output_dir = os.path.dirname(output_path)
+            if output_dir and not os.path.exists(output_dir):
+                try:
+                    os.makedirs(output_dir)
+                    logger.info(f"Created output directory: {output_dir}")
+                except OSError as e:
+                    logger.error(f"Failed to create output directory {output_dir}: {e}")
+                    parser.exit(1)
 
-        # Ensure directory exists if output path includes directories
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
+            # Write binary output to file
             try:
-                os.makedirs(output_dir)
-                logger.info(f"Created output directory: {output_dir}")
-            except OSError as e:
-                logger.error(f"Failed to create output directory {output_dir}: {e}")
+                with open(output_path, 'wb') as f:
+                    f.write(response_data)
+                logger.info(f"Output successfully saved to {output_path}")
+            except IOError as e:
+                logger.error(f"Failed to write output to {output_path}: {e}")
                 parser.exit(1)
-
-        # Write output to file
-        try:
-            write_mode = 'wb' if is_binary_output else 'w'
-            encoding = None if is_binary_output else 'utf-8'
-            with open(output_path, write_mode, encoding=encoding) as f:
-                f.write(response_data)
-            logger.info(f"Output successfully saved to {output_path}")
-            
-            # Force a clean exit to avoid code 130
-            sys.exit(0)
-            
-        except IOError as e:
-            logger.error(f"Failed to write output to {output_path}: {e}")
-            parser.exit(1)
-        except Exception as e:
-             logger.error(f"An unexpected error occurred while writing output: {e}")
-             parser.exit(1)
+            except Exception as e:
+                logger.error(f"An unexpected error occurred while writing output: {e}")
+                parser.exit(1)
+        
+        # Force a clean exit
+        sys.exit(0)
 
     except Exception as e:
         logger.error(f"An error occurred during API interaction or processing: {e}", exc_info=True)
