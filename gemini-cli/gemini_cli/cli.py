@@ -24,26 +24,22 @@ def main():
     required = parser.add_argument_group('required arguments')
     required.add_argument('-p', '--prompt', type=str, help='Text prompt to send to the API.')
 
-    parser.add_argument('-f', '--file', type=str, help='Path to a file to send to the API.')
-    parser.add_argument('-d', '--folder', type=str, help='Path to a folder for additional context.')
+    parser.add_argument('-i', '--input', type=str, help='Path to an input file or folder.')
+    parser.add_argument('-f', '--filter', type=str, help='Filter pattern for files in a folder (e.g., "*.txt", "*.jpg").')
     parser.add_argument('-o', '--output', type=str, help='Path to save the output file.')
     parser.add_argument('-t', '--output-type', choices=['text', 'image'], default='text', help='Type of output to generate.')
     parser.add_argument('-m', '--model', type=str, default=None, help='Model code to use for the API request.')
 
     args = parser.parse_args()
 
-    if not args.prompt and not args.file:
+    if not args.prompt and not args.input:
         # Use logger.error instead of parser.error for consistency if desired,
         # or keep parser.error for its specific behavior (prints usage and exits).
-        logger.error('At least one of --prompt or --file must be provided.')
+        logger.error('At least one of --prompt or --input must be provided.')
         parser.exit(1) # Manually exit if using logger.error
 
-    if args.folder and not os.path.isdir(args.folder):
-        logger.error(f'The specified folder path does not exist: {args.folder}')
-        parser.exit(1)
-
-    if args.file and not os.path.isfile(args.file):
-        logger.error(f'The specified file path does not exist: {args.file}')
+    if args.input and not os.path.exists(args.input):
+        logger.error(f'The specified input path does not exist: {args.input}')
         parser.exit(1)
 
     # Determine model based on output type and user input
@@ -63,7 +59,7 @@ def main():
     logger.info(f"Using model: {model_name}") # Use logger.info
 
     try:
-        response = interact_with_gemini_api(args.prompt, args.file, args.folder, args.output_type, model_name)
+        response = interact_with_gemini_api(args.prompt, args.input, args.filter, args.output_type, model_name)
 
         if args.output:
             try:
