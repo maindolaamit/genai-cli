@@ -1,12 +1,8 @@
 import json
 from google import genai
 from PIL import Image
-import os
-from .utils import (
-    validate_file_path, validate_folder_path, read_file, 
-    process_image, process_pdf, process_text_file, process_audio, process_video,
-    get_file_type, setup_logger, FILE_FORMATS
-)
+from io import BytesIO
+from .utils import validate_file_path, validate_folder_path, read_file, process_image, setup_logger # Changed import to relative
 
 # Initialize logger
 logger = setup_logger('gemini_api')
@@ -14,144 +10,171 @@ logger = setup_logger('gemini_api')
 class GeminiAPI:
     def __init__(self, api_key, base_url=None):
         self.api_key = api_key
-        # Ensure genai is configured correctly. Assuming API key needs to be set.
-        # If using google.genai directly, configuration might be needed.
-        # Check google-genai documentation for the correct way to initialize/configure.
+        # Initialize the Google Generative AI client
         self.client = genai.Client(api_key=api_key) 
 
-        # # Configure the library with the API key if needed by the library structure
-        # try:
-        #      genai.configure(api_key=api_key)
-        # except Exception as e:
-        #      print(f"Warning: Could not configure google.genai with API key: {e}")
-
-
-    def send_text_prompt(self, prompt, model='gemini-1.5-flash'): # Default model string
+    def send_text_prompt(self, prompt, model='gemini-1.5-flash', output_type='text'): # Default model string
         """Sends a text prompt to the specified Gemini model."""
         try:
-
-            # Generate content using the model
-            response = self.client.models.generate_content(
-                model=model, # Use the provided model string directly
-                contents=prompt,
-            )
-
-            # Return the response in a consistent format
-            return {
-                'response': response.text,
-                'model': model # Return the model name used
-            }
-        except Exception as e:
-            # Provide more context in the error message
-            raise Exception(f"Error sending text prompt to Gemini model '{model}': {e}") from e
-
-    def send_file_prompt(self, file_path, prompt=None, model='gemini-pro-vision', output_type='text'):
-        """
-        Sends a file prompt to the specified Gemini model.
-        
-        Args:
-            file_path (str): Path to the file to process.
-            prompt (str, optional): Additional text prompt to send with the file.
-            model (str): The Gemini model to use.
-            output_type (str): Type of output to generate ('text' or 'image').
+            # Check if model is for image generation
+            is_image_model = 'imagen' in model.lower() or 'image-generation' in model.lower()
+            logger.debug(f"Using model: {model} for {'image' if is_image_model else 'text'} generation")
             
-        Returns:
-            dict: Response containing 'response' and 'model' keys.
-        """
-        try:
-            # Validate file exists
-            validate_file_path(file_path)
-            
-            # Get the file type
-            file_type = get_file_type(file_path)
-            if not file_type:
-                raise ValueError(f"Unsupported file type for {file_path}")
+            if is_image_model or output_type == 'image':
+                # Handle image generation
+                logger.debug(f"Using image generation with model: {model}")
                 
-            logger.info(f"Processing file type: {file_type} for model: {model}")
-            
-            # Create a prompt text based on user input or default
-            prompt_text = prompt if prompt else f"Describe this {file_type} in detail:"
-            
-            # Process file based on type
-            if file_type == 'image':
-                # Process image using the genai.Image class
                 try:
-                    from google.genai import Image as GenAIImage
-                    image_obj = GenAIImage.load_from_file(file_path)
+                    # Import the types module for configuration
+                    from google.genai import types
                     
-                    # Create content for the API request
+                    # Generate image content
                     response = self.client.models.generate_content(
                         model=model,
-                        contents=[prompt_text, image_obj]
-                    )
-                except ImportError:
-                    # If the Google GenAI Image class is not available, fallback to direct base64
-                    import base64
-                    with open(file_path, "rb") as f:
-                        image_bytes = f.read()
-                    
-                    image_parts = [
-                        {"text": prompt_text},
-                        {"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(image_bytes).decode("utf-8")}}
-                    ]
-                    
-                    response = self.client.models.generate_content(
-                        model=model,
-                        contents=image_parts
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_modalities=['Text', 'Image']
+                        )
                     )
                     
-            elif file_type == 'text':
-                # Process text file
-                text_data = process_text_file(file_path)
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=[{"text": prompt_text + "\n\n" + text_data}]
-                )
-                
-            elif file_type == 'pdf':
-                # For PDF files, we'll need to use blob or file handling depending on API support
-                logger.info("Processing PDF file")
-                # This implementation assumes the gemini-pro-vision model can process PDFs
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=[
-                        {"text": prompt_text},
-                        {"file_data": {"file_uri": file_path, "mime_type": "application/pdf"}}
-                    ]
-                )
-                
-            elif file_type in ['audio', 'video']:
-                # For audio/video, may need specialized handling
-                logger.info(f"Processing {file_type} file")
-                mime_type = f"{file_type}/{os.path.splitext(file_path)[1].lower().lstrip('.')}"
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=[
-                        {"text": prompt_text},
-                        {"file_data": {"file_uri": file_path, "mime_type": mime_type}}
-                    ]
-                )
+                    # Process the response to extract the image
+                    image_data = None
+                    text_response = ""
+                    
+                    for part in response.candidates[0].content.parts:
+                        if part.text is not None:
+                            text_response += part.text
+                        elif part.inline_data is not None:
+                            logger.debug("Found image data in response part")
+                            image_data = part.inline_data.data
+                    
+                    if image_data:
+                        return {
+                            'response': image_data,  # Return binary image data
+                            'text_response': text_response,  # Include any text response
+                            'model': model
+                        }
+                    else:
+                        logger.warning("No image data found in response parts")
+                        return {
+                            'response': text_response.encode('utf-8') if text_response else b'',
+                            'model': model,
+                            'warning': "No image data found in response"
+                        }
+                    
+                except Exception as gen_error:
+                    logger.error(f"Error in image generation: {str(gen_error)}", exc_info=True)
+                    error_message = f"Image generation error: {str(gen_error)}"
+                    return {
+                        'response': error_message.encode('utf-8'),
+                        'model': model,
+                        'error': str(gen_error)
+                    }
             else:
-                raise ValueError(f"File type {file_type} processing not implemented")
+                # For text models, generate content as before
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
                 
-            # Return response based on output type
-            logger.info("Processing API response")
-            if output_type == 'image':
-                # For image generation - handle accordingly
+                # Return the text response
                 return {
-                    'response': response.text if hasattr(response, 'text') else response,
+                    'response': response.text,
                     'model': model
                 }
+        except Exception as e:
+            # Provide more context in the error message
+            logger.error(f"Error in send_text_prompt: {str(e)}", exc_info=True)
+            error_message = f"Error sending prompt to model: {str(e)}"
+            return {
+                'response': error_message.encode('utf-8'),
+                'model': model,
+                'error': str(e)
+            }
+
+    def send_file_prompt(self, file_path, model='gemini-pro-vision'): # Default model string
+        """Sends a file (image) prompt to the specified Gemini model."""
+        try:
+            # Check if model is for image generation
+            is_image_model = 'imagen' in model.lower() or 'image-generation' in model.lower()
+            
+            # Load the image file
+            image = Image.open(file_path)
+            
+            if is_image_model:
+                # For image generation models, use similar approach as in send_text_prompt
+                logger.debug(f"Using image generation with model: {model}")
+                
+                try:
+                    from google.genai import types
+                    
+                    # Read file content to use as prompt
+                    with open(file_path, 'r') as f:
+                        prompt = f.read().strip()
+                    
+                    # Generate image content
+                    response = self.client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_modalities=['Text', 'Image']
+                        )
+                    )
+                    
+                    # Process the response to extract the image
+                    image_data = None
+                    text_response = ""
+                    
+                    for part in response.candidates[0].content.parts:
+                        if part.text is not None:
+                            text_response += part.text
+                        elif part.inline_data is not None:
+                            logger.debug("Found image data in response part")
+                            image_data = part.inline_data.data
+                    
+                    if image_data:
+                        return {
+                            'response': image_data,  # Return binary image data
+                            'text_response': text_response,  # Include any text response
+                            'model': model
+                        }
+                    else:
+                        logger.warning("No image data found in response parts")
+                        return {
+                            'response': text_response.encode('utf-8') if text_response else b'',
+                            'model': model,
+                            'warning': "No image data found in response"
+                        }
+                except Exception as gen_error:
+                    logger.error(f"Error in image generation: {str(gen_error)}", exc_info=True)
+                    error_message = f"Image generation error: {str(gen_error)}"
+                    return {
+                        'response': error_message.encode('utf-8'),
+                        'model': model,
+                        'error': str(gen_error)
+                    }
             else:
-                # For text responses
+                # For vision models (like gemini-pro-vision)
+                # Prepare content parts (image with optional description)
+                parts = [
+                    {"text": "Describe the content of the image:"},
+                    {"image": {"data": process_image(file_path)}}
+                ]
+                
+                # Use the models.generate_content method from the client directly
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=parts
+                )
+
+                # Return response (text for vision models)
                 return {
                     'response': response.text if hasattr(response, 'text') else str(response),
                     'model': model
                 }
-                    
         except Exception as e:
-            # Provide more context in the error message
-            raise Exception(f"Error sending {file_type if 'file_type' in locals() else 'file'} prompt to Gemini model '{model}': {e}") from e
+             # Provide more context in the error message
+            raise Exception(f"Error sending file prompt to Gemini model '{model}': {e}") from e
 
     def save_output(self, output, output_path):
         # Assuming output is text data for JSON saving. Adjust if binary.

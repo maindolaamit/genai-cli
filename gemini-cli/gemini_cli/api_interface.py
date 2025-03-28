@@ -97,23 +97,31 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
     # Check if the model is primarily for image generation (like Imagen)
     is_image_gen_model = 'image' in model_capabilities['outputs'] and 'text' not in model_capabilities['outputs']
 
-    if is_image_gen_model:
+    if is_image_gen_model or output_type == 'image':
         # Handle image generation models (expects text prompt, outputs image)
         if input_path:
-            logger.warning(f"Model '{model_name}' is an image generation model and does not support file inputs. Ignoring input path '{input_path}'.")
+            logger.warning(f"Model '{model_name}' is used for image generation and may not support file inputs. Ignoring input path '{input_path}'.")
         if not prompt_text:
             raise ValueError(f"Image generation model '{model_name}' requires a text prompt.")
-        if output_type != 'image':
-            logger.warning(f"Model '{model_name}' only supports image output. Forcing output type to 'image'.")
-            output_type = 'image'  # Force image output
 
-        logger.info(f"Sending text prompt to image generation model: {model_name}")
+        logger.info(f"Sending text prompt to generate image with model: {model_name}")
         try:
-            response = gemini_api.send_text_prompt(prompt_text, model=model_name)
-            print(f"API response: {response}")
-            return response.get('response', b'')  # Expect bytes for image
+            # Pass the output_type to send_text_prompt
+            response_dict = gemini_api.send_text_prompt(
+                prompt_text, 
+                model=model_name,
+                output_type='image'
+            )
+            
+            if 'error' in response_dict:
+                logger.warning(f"Error in image generation: {response_dict['error']}")
+                return response_dict.get('response', b'')
+            
+            # Return the response (could be image bytes or error text)
+            return response_dict.get('response', b'')
         except Exception as e:
-            raise Exception(f"API request failed for image generation: {e}") from e
+            logger.error(f"API request failed for image generation: {str(e)}", exc_info=True)
+            raise Exception(f"Image generation failed: {e}") from e
 
     elif input_path:
         # Handle multimodal or text models with file/folder input

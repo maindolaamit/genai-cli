@@ -2,70 +2,107 @@ gemini-cli -i ./resources/diagram.png -p "explain me this image"
 
 The above command has below code flow:
 
-Parse the input parameters passed to the command
-check all the required parameters are present
+Parse the input parameters passed to the command (`argparse` in `cli.py`).
+Check if required parameters (`--prompt` or `--input`) are present.
 
-A prompt can be string or a file or a link. 
-We will read the prompt from the file if it is a file or link
+A prompt (`-p`) can be a string or a path to a file.
+If it's a file path, read the content from the file (`read_file` in `cli.py`).
 
-A filter is a string which is used to filter the input files
+A filter (`-f`) is a string used to filter files when the input (`-i`) is a folder.
 
-Our cli allows input files(-i) of limit formats(defined in FILE_FORMATS) and extensions which are supported by the google gemini api. Example below
-    - image(png, jpg, jpeg, gif)
-    - text(txt, csv, json)
-    - pdf(pdf)
-    - video(mp4, avi, mov)
-    - audio(mp3, wav, flac)
-check google gemini api for the full supported file extensions
+Input (`-i`) can be a local file or a local folder.
+Supported input file formats and extensions are defined in `FILE_FORMATS` in `utils.py`.
+    - image: png, jpg, jpeg, gif
+    - text: txt, csv, json, xml, html, java, cpp, py
+    - pdf: pdf
+    - video: mp4, avi, mov
+    - audio: mp3, wav, flac
+Input files have a size limit (`MAX_FILE_SIZE` in `utils.py`, currently 20MB).
+    - If input is a file:
+        - Validate the file path and size (`validate_file_path`, `validate_file_size` in `utils.py`).
+        - Determine file type (`get_file_type` in `utils.py`).
+        - Check if the model supports the input file type (using `model_capabilities['inputs']` in `api_interface.py`).
+        - Call the appropriate API function (`send_file_prompt` in `gemini_api.py`).
+    - If input is a folder:
+        - Validate the folder path (`validate_folder_path` in `utils.py`).
+        - Get files from the folder, applying the filter if provided (`get_files_from_folder` in `utils.py`).
+        - Process the *first* supported file found (current logic in `api_interface.py`).
+        - Check if the model supports the file type.
+        - Call the appropriate API function (`send_file_prompt` in `gemini_api.py`).
 
-An input can be a local file, link or a local folder
-if file, Input files have size limit of X MB if more than X MB, we will upload the to the client using the File APIserver
-    - if file is of type image, we will read the image and pass it to the model using pillow. use the goole gemini reference documentation i have provided below.
-    - if file is of type text, we will read the text and pass it to the model
-    - if file is of type pdf, we will read the pdf and pass it to the model. use the google gemini reference documentation i have provided below. 
-    - if file is of type video, we will read the video and pass it to the model. use the google gemini reference documentation i have provided below.
-    - if file is of type audio, we will read the audio and pass it to the model. use the google gemini reference documentation i have provided below.
-if folder 
-    - If folder is passed, check if the folder is empty
-    - Loop for each file passed our filter(supported extentions + filter parameters if given by user) and procees as per above steps for input file.
+Output path (`-o`) is optional.
+    - If `-o` is provided, save the output to the specified file path.
+    - If `-o` is *not* provided:
+        - Generate a filename automatically: `<model_name>_<first-four-words-of-prompt-kebab-case>_<timestamp>.<extension>` (`generate_output_filename` in `cli.py`).
+        - The extension depends on the `output_type` (e.g., `.txt` for text, `.jpg` for image).
+        - Save the output to the generated filename.
 
-Our cli allows user to save file by -o
+Output type (`-t`) is optional.
+    - If `-t` is provided (e.g., `text`, `image`), validate if the selected model supports this output type (using `model_capabilities['outputs']` in `cli.py`).
+    - If `-t` is *not* provided:
+        - Infer the output type from the selected model's default (`model_capabilities['default_output']` in `cli.py`).
 
-Our cli support different models, user can pass one or more values for models parameter.
-A model is our mapping to gemini models, a user can pass different models for different use cases.
-When passed multiple models we will run the models in parallel and save the output for all the models with name <model_name>_<first two words of prompt>_<timestamp>.<file_extension>
-    - if model is not passed, we will use the default model
-    - if model is passed, we will use the model passed by user
-    - if model is not supported, we will show error message and exit
-    - if model is unknown, we will use show error message and exit
-    - if list of models is passed, we will run all the models in parallel and save the output for all the models with name <model_name>_<first two words of prompt>_<timestamp>.<file_extension>
+Model selection (`-m`) uses aliases defined in `MODEL_MAP` in `cli.py`.
+    - If `-m` is not provided, use the `DEFAULT_MODEL_ALIAS` (`default`).
+    - If `-m` is provided, look up the alias in `MODEL_MAP` to get the actual model name and its capabilities (inputs, outputs, default_output).
+    - If the alias is not found, show an error message and exit.
+    - The `MODEL_MAP` structure now includes capabilities:
+        ```python
+        MODEL_MAP = {
+            "flash": {
+                "name": "gemini-1.5-flash-latest",
+                "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+                "outputs": ["text"],
+                "default_output": "text"
+            },
+            "pro": {
+                "name": "gemini-1.5-pro-latest",
+                # ... capabilities ...
+            },
+            "imagen": {
+                "name": "imagen-3.0-generate-002",
+                "inputs": ["text"],
+                "outputs": ["image"],
+                "default_output": "image"
+            },
+            # ... other models ...
+            "default": { # Default maps to flash
+                "name": "gemini-1.5-flash-latest",
+                # ... capabilities ...
+            }
+        }
+        ```
 
-Modesl will usually return a string or a file(pdf, image, video, audio)
-Our cli shows output for text models but for other models we will save the output to a file by default, using -o will allow user to save the output to a file
-or a folder
-    - if file, save the output to the file
-    - if folder, save the output to the folder
+API Interaction (`interact_with_gemini_api` in `api_interface.py`):
+    - Initializes `GeminiAPI` client.
+    - Determines the API call based on model capabilities and inputs.
+    - Handles image-generation-only models (like Imagen) separately.
+    - Calls `gemini_api.send_text_prompt` or `gemini_api.send_file_prompt`.
+    - Returns the response data (text string or image bytes).
 
-We can save the output as per our supported FILE_FORMATS
+Output Handling (in `cli.py`):
+    - Determines the output path (user-provided or generated).
+    - Creates the output directory if it doesn't exist.
+    - Writes the response data to the file in the correct mode ('w' for text, 'wb' for binary).
 
-- Models 
-Reference: 
+Error Handling:
+    - Checks for API key (`GEMINI_API_KEY` environment variable).
+    - Handles file/folder not found errors.
+    - Handles unsupported model aliases or output types.
+    - Catches exceptions during API calls or file writing and logs errors.
+
+- Models
+Reference:
+https://ai.google.dev/gemini-api/docs/models
+https://ai.google.dev/gemini-api/docs/image-generation
 https://ai.google.dev/gemini-api/docs/document-processing?lang=python
 https://ai.google.dev/gemini-api/docs/text-generation
 https://ai.google.dev/gemini-api/docs/audio?lang=python
 https://ai.google.dev/gemini-api/docs/vision?lang=python
 
-MODEL_MAP = {
-    "default": "gemini-1.5-pro-latest",
-    "flash": "gemini-1.5-pro",
-    "vision": "gemini-1.0-pro-vision-latest",
-    "imagen": "imagen-3.0-generate-002",
-    "unknown-model": "gemini-unknown"
-}
-
-FILE_FORMATS = {
+FILE_FORMATS = { # Defined in utils.py
     "image": ["png", "jpg", "jpeg", "gif"],
-    "text": ["txt", "csv", "json", ".xml", "html", ".java", "cpp", "py"],
+    "text": ["txt", "csv", "json", "xml", "html", "java", "cpp", "py"],
     "pdf": ["pdf"],
     "video": ["mp4", "avi", "mov"],
     "audio": ["mp3", "wav", "flac"]

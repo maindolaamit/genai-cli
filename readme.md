@@ -18,31 +18,23 @@ Gemini CLI is a command-line interface for interacting with the Gemini API. This
 
 To set up the project, follow these steps:
 
-1. **Clone the Repository:** First, ensure you have `git` installed on your system. Then, open your terminal and run the following commands:
+1.  **Clone the Repository:** First, ensure you have `git` installed on your system. Then, open your terminal and run the following commands:
 
     ```bash
     git clone https://github.com/yourusername/gemini-cli.git
     cd genai-cli # Navigate into the main project directory
     ```
 
-2. **Install Dependencies:** Make sure you have Python 3 installed on your system. Use pip3 to install the required packages:
+2.  **Install the Package:** Make sure you have Python 3 and `pip3` installed. Navigate into the `gemini-cli` sub-directory and use `pip3` to install the package. This command reads the `setup.py` file and installs the CLI along with its dependencies.
 
     ```bash
     cd gemini-cli
-    pip3 install -r requirements.txt
+    pip3 install .
     ```
+    *   This will install the `gemini-cli` command to a location typically included in your system's PATH (like `~/.local/bin` on Linux/macOS).
+    *   Ensure the installation directory (e.g., `~/.local/bin`) is in your `PATH` environment variable. If not, add it to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`) and source it (`source ~/.zshrc`).
 
-3. **Run the Installation Script:** Navigate into the `gemini-cli` sub-directory and run the installation script. This will set permissions and create necessary links/aliases.
-
-    ```bash
-    chmod +x install.sh
-    ./install.sh
-    ```
-    *   The script will create a log file named `installation.log`.
-    *   It attempts to add an alias to your `~/.zshrc` file and source it. If you use a different shell (like bash), you might need to manually add the alias `alias gemini-cli="python3 ~/.local/bin/gemini-cli"` to your respective configuration file (e.g., `~/.bashrc`) and source it (`source ~/.bashrc`).
-    *   Ensure `~/.local/bin` is in your `PATH` environment variable.
-
-4. **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable named `GEMINI_API_KEY`. Add the following line to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`), replacing `YOUR_GEMINI_API_KEY_HERE` with your actual key:
+3.  **Set Gemini API Key:** Obtain your Gemini API key and set it as an environment variable named `GEMINI_API_KEY`. Add the following line to your shell's configuration file (e.g., `~/.zshrc` or `~/.bashrc`), replacing `YOUR_GEMINI_API_KEY_HERE` with your actual key:
 
     ```bash
     export GEMINI_API_KEY='YOUR_GEMINI_API_KEY_HERE'
@@ -51,41 +43,36 @@ To set up the project, follow these steps:
 
 ## Usage
 
-To use the script directly, run the following command:
+Once installed, you can use the `gemini-cli` command directly from your terminal:
 
 ```bash
-python3 gemini-cli/src/cli.py -p "Your text prompt here"
-```
-
-To use the CLI with the installed alias, run the following command:
-
-```bash
-gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context/folder" -o "path/to/output/file" -t "text|image" -m "model_code"
+gemini-cli -p "Your text prompt here" -i "path/to/your/file_or_folder" -f "*.jpg" -o "path/to/output/file" -t "text|image" -m "model_alias"
 ```
 
 ### Command-Line Options
 
-- `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
-- `-i`, `--input`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
-- `-o`, `--output`: Path where the output will be saved.
-- `-t`, `--output-type`: Specify the output type (`text` or `image`).
-- `-m`, `--model`: Select the model to use for generating responses. Example values: "default", "flash", "vision", "imagen".
+-   `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
+-   `-i`, `--input`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
+-   `-f`, `--filter`: Filter pattern for files when `-i` points to a folder (e.g., `"*.txt"`, `"*.jpg"`).
+-   `-o`, `--output`: Optional path where the output will be saved. If omitted, a filename is generated automatically.
+-   `-t`, `--output-type`: Specify the output type (`text` or `image`). If omitted, it's inferred from the selected model's default.
+-   `-m`, `--model`: Select the model alias to use for generating responses (e.g., "default", "flash", "pro", "vision", "imagen"). See `MODEL_MAP` in [`gemini-cli/gemini_cli/cli.py`](gemini-cli/gemini_cli/cli.py) for available aliases.
 
 ### Supported File Formats
 
-The CLI supports the following file formats:
+The CLI supports the following file formats (defined in [`gemini-cli/gemini_cli/utils.py`](gemini-cli/gemini_cli/utils.py)):
 
-- **Images**: png, jpg, jpeg, gif
-- **Text files**: txt, csv, json, xml, html, java, cpp, py
-- **PDF files**: pdf
-- **Video files**: mp4, avi, mov (experimental)
-- **Audio files**: mp3, wav, flac (experimental)
+-   **Images**: png, jpg, jpeg, gif
+-   **Text files**: txt, csv, json, xml, html, java, cpp, py
+-   **PDF files**: pdf
+-   **Video files**: mp4, avi, mov (experimental)
+-   **Audio files**: mp3, wav, flac (experimental)
 
 File size is limited to 20MB for all formats.
 
 ### Use Cases
 
-- Generate Text from a Prompt:
+-   Generate Text from a Prompt:
 
     ```bash
     gemini-cli -p "What is the capital of France?"
@@ -95,7 +82,7 @@ File size is limited to 20MB for all formats.
 
     **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
 
-- Generate Text from a Prompt File:
+-   Generate Text from a Prompt File:
 
     ```bash
     gemini-cli -p ./prompts/test.txt -o output.txt
@@ -103,51 +90,56 @@ File size is limited to 20MB for all formats.
 
     This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
 
-- Process Images with Prompts:
+-   Process Images with Prompts:
 
     ```bash
     gemini-cli -i ./resources/diagram.png -p "Explain this diagram in detail"
     gemini-cli -i ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
     ```
 
-- Analyze Text Files:
+-   Analyze Text Files:
 
     ```bash
     gemini-cli -i ./resources/questions.txt -p "Answer these questions"
     ```
 
-- Process PDF Documents:
+-   Process PDF Documents:
 
     ```bash
+    # Assuming you have a PDF file at ./documents/report.pdf
     gemini-cli -i ./documents/report.pdf -p "Summarize this report" -o "summary.txt"
     ```
 
-- Process a Folder of Images:
+-   Process a Folder of Images:
 
     ```bash
+    # Process all supported files in the resources folder
     gemini-cli -i ./resources/ -p "Describe each image" -o "image-descriptions.txt"
+
+    # Process only PNG files in the resources folder
+    gemini-cli -i ./resources/ -f "*.png" -p "Describe each PNG image" -o "png-descriptions.txt"
     ```
 
-    This processes all supported image files in the resources folder.
-
-- Generate Images from Text (using Imagen model):
+-   Generate Images from Text (using Imagen or Flash Image model):
 
     ```bash
-    gemini-cli -p "Generate a photorealistic image of a futuristic city" -t image -m imagen -o generated-city.png
+    gemini-cli -p "Generate a photorealistic image of a futuristic city" -t image -m imagen -o generated-city.jpg
+    gemini-cli -p "A watercolor painting of a cat wearing a hat" -t image -m flash-img -o cat-painting.jpg
     ```
 
-- Use Different Models:
+-   Use Different Models:
 
     ```bash
-    gemini-cli -p "Write a technical analysis of quantum computing" -m flash -o "analysis.txt"
-    gemini-cli -i ./resources/robot.jpeg -p "Describe this image" -m vision
+    gemini-cli -p "Write a technical analysis of quantum computing" -m pro -o "analysis.txt"
+    gemini-cli -i ./resources/diagram.png -p "Describe this image" -m vision
     ```
 
-- Summarize transactions from images in a folder and output in Markdown table format:
+-   Summarize transactions from images in a folder and output in Markdown table format:
 
     Command:
     ````bash
-    gemini-cli -o hisaab.txt -f "trx*.png" -i ./resources  -p "summarize total transactions and retun in md table format"
+    # Assuming transaction images are named trx*.png in ./resources
+    gemini-cli -o hisaab.txt -f "trx*.png" -i ./resources  -p "summarize total transactions and return in md table format"
     ````
 
     Expected Output in `hisaab.txt`:
@@ -166,34 +158,16 @@ This project includes a comprehensive test suite to ensure all components functi
 
 ### Test Files
 
-The test suite consists of four main test files:
+The test suite consists of four main test files located in the `gemini-cli/tests` directory:
 
-1. **test_utils.py** - Tests for utility functions:
-   - Testing file reading and validation
-   - Testing folder path validation
-   - Testing environment variable loading
-   - Testing image processing
-
-2. **test_gemini_api.py** - Tests for the Gemini API client:
-   - Testing API header construction
-   - Testing text prompt requests (success and failure)
-   - Testing file prompt handling
-   - Testing response handling and output saving
-
-3. **test_cli.py** - Tests for the command-line interface:
-   - Testing command-line argument parsing
-   - Testing model selection logic
-   - Testing error handling scenarios
-
-4. **test_api_interface.py** - Tests for the API interface module:
-   - Testing text and file prompt handling
-   - Testing folder context integration
-   - Testing image output generation
-   - Testing error conditions
+1.  **test_utils.py** - Tests for utility functions ([`gemini-cli/gemini_cli/utils.py`](gemini-cli/gemini_cli/utils.py)).
+2.  **test_gemini_api.py** - Tests for the Gemini API client ([`gemini-cli/gemini_cli/gemini_api.py`](gemini-cli/gemini_cli/gemini_api.py)).
+3.  **test_cli.py** - Tests for the command-line interface ([`gemini-cli/gemini_cli/cli.py`](gemini-cli/gemini_cli/cli.py)).
+4.  **test_api_interface.py** - Tests for the API interface module ([`gemini-cli/gemini_cli/api_interface.py`](gemini-cli/gemini_cli/api_interface.py)).
 
 ### Running Tests
 
-To run the entire test suite, use the following command from the project root:
+To run the entire test suite, use the following command from the **project root directory** (`genai-cli`):
 
 ```bash
 python3 -m unittest discover -s gemini-cli/tests
@@ -212,10 +186,10 @@ python3 -m unittest gemini-cli/tests/test_api_interface.py
 
 When adding new features to the CLI, please ensure:
 
-1. Write tests for any new functionality
-2. Use mocking for external dependencies
-3. Run the test suite before submitting a pull request
-4. Ensure existing tests continue to pass
+1.  Write tests for any new functionality in the appropriate test file.
+2.  Use mocking (`unittest.mock`) for external dependencies like API calls or file system interactions where necessary.
+3.  Run the test suite before submitting changes.
+4.  Ensure existing tests continue to pass.
 
 ## Contributing
 
@@ -223,4 +197,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.

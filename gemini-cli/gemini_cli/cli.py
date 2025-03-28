@@ -4,11 +4,22 @@ import logging
 import time
 import re
 import datetime  # Import datetime for timestamp
+import signal
+import sys
 from .api_interface import interact_with_gemini_api
-from .utils import setup_logger, read_file, validate_file_path 
+from .utils import setup_logger, read_file, validate_file_path  # Removed get_file_extension_from_mime
 
 # Initialize logger
 logger = setup_logger()
+
+# Signal handler for graceful exit
+def signal_handler(sig, frame):
+    logger.info("Received signal to terminate. Cleaning up and exiting gracefully.")
+    sys.exit(0)
+
+# Register the signal handler
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 # Updated MODEL_MAP with capabilities
 # Based on info from https://ai.google.dev/gemini-api/docs/models (as of late 2024/early 2025)
@@ -65,7 +76,7 @@ MODEL_MAP = {
 DEFAULT_MODEL_ALIAS = "default"
 
 def generate_output_filename(model_name, prompt_text, output_type):
-    """Generates a filename based on model, prompt, timestamp, and output type."""
+    """Generates a filename based on prompt, model, timestamp, and output type."""
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     
     # Extract first four words from prompt, lowercase, kebab-case
@@ -82,7 +93,7 @@ def generate_output_filename(model_name, prompt_text, output_type):
     # Sanitize model name for filename
     safe_model_name = model_name.replace('/', '_').replace('.', '_')
 
-    return f"{safe_model_name}_{kebab_prefix}_{timestamp}.{extension}"
+    return f"{kebab_prefix}_{safe_model_name}_{timestamp}.{extension}"
 
 def main():
     parser = argparse.ArgumentParser(description='Interact with the Gemini API.')
@@ -189,6 +200,10 @@ def main():
             with open(output_path, write_mode, encoding=encoding) as f:
                 f.write(response_data)
             logger.info(f"Output successfully saved to {output_path}")
+            
+            # Force a clean exit to avoid code 130
+            sys.exit(0)
+            
         except IOError as e:
             logger.error(f"Failed to write output to {output_path}: {e}")
             parser.exit(1)
