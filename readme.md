@@ -2,16 +2,17 @@
 
 # Gemini CLI
 
-Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users to provide text or file prompts, attach files, specify additional context through folder paths, and save outputs in various formats.
+Gemini CLI is a command-line interface for interacting with the Gemini API. This tool allows users to provide text or file prompts, process various file types (images, text, PDFs, audio, video), and save outputs in different formats.
 
 ## Features
 
-- Provide text or file prompts for API interaction.
-- Attach files via command-line parameters.
-- Specify a folder path for additional context.
-- Save output to a specified file path.
-- Choose between text or image output types.
-- Select different models for generating responses.
+- Provide text or file prompts for API interaction
+- Process multiple file types including images, text, PDFs, audio, and video
+- Support for folder input with automatic file type detection
+- Size validation for uploaded files (limited to 20MB)
+- Save output to a specified file path
+- Choose between text or image output types
+- Select different models for generating responses
 
 ## Installation
 
@@ -65,11 +66,22 @@ gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context
 ### Command-Line Options
 
 - `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
-- `-f`, `--file`: Path to a file to attach.
-- `-d`, `--folder`: Path to a folder containing additional context files.
+- `-i`, `--input`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
 - `-o`, `--output`: Path where the output will be saved.
 - `-t`, `--output-type`: Specify the output type (`text` or `image`).
-- `-m`, `--model`: Select the model to use for generating responses.
+- `-m`, `--model`: Select the model to use for generating responses. Example values: "default", "flash", "vision", "imagen".
+
+### Supported File Formats
+
+The CLI supports the following file formats:
+
+- **Images**: png, jpg, jpeg, gif
+- **Text files**: txt, csv, json, xml, html, java, cpp, py
+- **PDF files**: pdf
+- **Video files**: mp4, avi, mov (experimental)
+- **Audio files**: mp3, wav, flac (experimental)
+
+File size is limited to 20MB for all formats.
 
 ### Use Cases
 
@@ -78,7 +90,7 @@ gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context
     ```bash
     gemini-cli -p "What is the capital of France?"
     gemini-cli -o "output.txt" -p "What is the capital of France?"
-    gemini-cli -o "output.txt" -t "text" -m "pro" -p "What is the capital of France?"
+    gemini-cli -o "output.txt" -t "text" -m "default" -p "What is the capital of France?"
     ```
 
     **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
@@ -91,36 +103,45 @@ gemini-cli -p "Your text prompt here" -f "path/to/your/file" -d "path/to/context
 
     This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
 
-- Using a File as Input for Text Generation:
+- Process Images with Prompts:
 
     ```bash
-    gemini-cli -f ./resources/document.txt -p "Summarize this document"
+    gemini-cli -i ./resources/diagram.png -p "Explain this diagram in detail"
+    gemini-cli -i ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
     ```
 
-    This attaches the document as context and uses the prompt to specify what to do with it.
-
-- Describe Images:
+- Analyze Text Files:
 
     ```bash
-    gemini-cli -p "describe the image in detail" -i ./resources/image-1.png
-    gemini-cli -p "Describe these images in detail." -i ./resources/image-1.jpg ./resources/image-2.png -o "image-description.txt"
+    gemini-cli -i ./resources/questions.txt -p "Answer these questions"
     ```
 
-- Generate a Logo from Images in a Folder and Save Image Output:
+- Process PDF Documents:
 
     ```bash
-    gemini-cli -t image -m imagen -p "Generate a modern logo." -d logos_input_images -o logo.png
+    gemini-cli -i ./documents/report.pdf -p "Summarize this report" -o "summary.txt"
     ```
 
-    (Replace imagen with the appropriate Gemini image generation model name.)
-
-- Specify a Text Model:
+- Process a Folder of Images:
 
     ```bash
-    gemini-cli -p "Write a poem about the sea." -o "poem.txt" -m flash-exp
+    gemini-cli -i ./resources/ -p "Describe each image" -o "image-descriptions.txt"
     ```
 
-    (Replace flash-exp with a specific Gemini text model name.)
+    This processes all supported image files in the resources folder.
+
+- Generate Images from Text (using Imagen model):
+
+    ```bash
+    gemini-cli -p "Generate a photorealistic image of a futuristic city" -t image -m imagen -o generated-city.png
+    ```
+
+- Use Different Models:
+
+    ```bash
+    gemini-cli -p "Write a technical analysis of quantum computing" -m flash -o "analysis.txt"
+    gemini-cli -i ./resources/robot.jpeg -p "Describe this image" -m vision
+    ```
 
 ## Testing
 

@@ -1,5 +1,19 @@
 import os
 import logging
+import mimetypes
+import pathlib
+
+# File formats supported by the CLI
+FILE_FORMATS = {
+    "image": ["png", "jpg", "jpeg", "gif"],
+    "text": ["txt", "csv", "json", "xml", "html", "java", "cpp", "py"],
+    "pdf": ["pdf"],
+    "video": ["mp4", "avi", "mov"],
+    "audio": ["mp3", "wav", "flac"]
+}
+
+# Maximum file size in MB
+MAX_FILE_SIZE = 20  # MB
 
 def read_file(file_path):
     """Read the contents of a file and return them as a string."""
@@ -50,6 +64,188 @@ def process_image(image_path):
         base64_encoded = base64.b64encode(image_bytes).decode("utf-8")
         
         return base64_encoded
+
+def process_pdf(pdf_path):
+    """
+    Process a PDF file for the Gemini API.
+    
+    Args:
+        pdf_path (str): Path to the PDF file.
+    
+    Returns:
+        bytes: Processed PDF data
+    """
+    # Validate file exists and is within size limits
+    validate_file_path(pdf_path)
+    validate_file_size(pdf_path)
+    
+    # Read the PDF file as binary
+    with open(pdf_path, 'rb') as file:
+        pdf_data = file.read()
+    
+    return pdf_data
+
+def process_text_file(text_path):
+    """
+    Process a text file for the Gemini API.
+    
+    Args:
+        text_path (str): Path to the text file.
+    
+    Returns:
+        str: Text content
+    """
+    # Validate file exists and is within size limits
+    validate_file_path(text_path)
+    validate_file_size(text_path)
+    
+    # Read the text file
+    with open(text_path, 'r', encoding='utf-8', errors='replace') as file:
+        text_data = file.read()
+    
+    return text_data
+
+def process_audio(audio_path):
+    """
+    Process an audio file for the Gemini API.
+    
+    Args:
+        audio_path (str): Path to the audio file.
+    
+    Returns:
+        bytes: Processed audio data
+    """
+    # Validate file exists and is within size limits
+    validate_file_path(audio_path)
+    validate_file_size(audio_path)
+    
+    # Read the audio file as binary
+    with open(audio_path, 'rb') as file:
+        audio_data = file.read()
+    
+    return audio_data
+
+def process_video(video_path):
+    """
+    Process a video file for the Gemini API.
+    
+    Args:
+        video_path (str): Path to the video file.
+    
+    Returns:
+        bytes: Processed video data
+    """
+    # Validate file exists and is within size limits
+    validate_file_path(video_path)
+    validate_file_size(video_path)
+    
+    # Read the video file as binary
+    with open(video_path, 'rb') as file:
+        video_data = file.read()
+    
+    return video_data
+
+def get_file_type(file_path):
+    """
+    Determine the type of file based on its extension.
+    
+    Args:
+        file_path (str): Path to the file.
+    
+    Returns:
+        str: File type ('image', 'text', 'pdf', 'video', 'audio') or None if not supported.
+    """
+    extension = pathlib.Path(file_path).suffix.lower().lstrip('.')
+    
+    for file_type, extensions in FILE_FORMATS.items():
+        if extension in extensions:
+            return file_type
+    
+    return None
+
+def validate_file_size(file_path):
+    """
+    Check if the file size is within the allowed limit.
+    
+    Args:
+        file_path (str): Path to the file.
+    
+    Raises:
+        ValueError: If the file exceeds the maximum size limit.
+    """
+    file_size_bytes = os.path.getsize(file_path)
+    file_size_mb = file_size_bytes / (1024 * 1024)  # Convert to MB
+    
+    if file_size_mb > MAX_FILE_SIZE:
+        raise ValueError(f"File size ({file_size_mb:.2f} MB) exceeds the maximum limit of {MAX_FILE_SIZE} MB.")
+
+def get_files_from_folder(folder_path, file_filter=None):
+    """
+    Get list of files from a folder, optionally filtered by type or pattern.
+    
+    Args:
+        folder_path (str): Path to the folder.
+        file_filter (str, optional): Filter pattern for files (e.g., '*.jpg').
+    
+    Returns:
+        list: List of file paths that match the filter criteria.
+    """
+    import glob
+    import os
+    
+    # Check if folder is empty
+    if not os.listdir(folder_path):
+        logger = setup_logger()
+        logger.warning(f"The folder at {folder_path} is empty.")
+        return []
+    
+    # If filter is provided, use it to find matching files
+    if file_filter:
+        # Handle wildcards in filter pattern
+        pattern = os.path.join(folder_path, file_filter)
+        matching_files = glob.glob(pattern)
+        return [f for f in matching_files if os.path.isfile(f)]
+    
+    # Otherwise, get all files with supported extensions
+    result = []
+    supported_extensions = []
+    for extensions in FILE_FORMATS.values():
+        supported_extensions.extend(extensions)
+    
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            extension = pathlib.Path(file_path).suffix.lower().lstrip('.')
+            if extension in supported_extensions:
+                result.append(file_path)
+    
+    return result
+
+def validate_file_type(file_path, supported_types=None):
+    """
+    Validate if the file type is supported.
+    
+    Args:
+        file_path (str): Path to the file.
+        supported_types (list, optional): List of supported file types.
+                                         If None, validates against all FILE_FORMATS.
+    
+    Returns:
+        str: The file type if valid.
+    
+    Raises:
+        ValueError: If the file type is not supported.
+    """
+    file_type = get_file_type(file_path)
+    
+    if file_type is None:
+        extension = pathlib.Path(file_path).suffix.lower()
+        raise ValueError(f"File type {extension} is not supported.")
+    
+    if supported_types and file_type not in supported_types:
+        raise ValueError(f"File type {file_type} is not supported for this operation.")
+    
+    return file_type
 
 # --- Colored Logging Setup ---
 

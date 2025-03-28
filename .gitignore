@@ -1,0 +1,25 @@
+# Ignore virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Ignore Python bytecode and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# Ignore build and distribution artifacts
+build/
+dist/
+*.egg-info/
+*.egg

@@ -1,1 +1,87 @@
-The capital of France is Paris.
+gemini-cli -i ./resources/diagram.png -p "explain me this image"
+
+The above command has below code flow:
+
+Parse the input parameters passed to the command
+check all the required parameters are present
+
+A prompt can be string or a file or a link. 
+We will read the prompt from the file if it is a file or link
+
+A filter is a string which is used to filter the input files
+
+Our cli allows input files(-i) of limit formats(defined in FILE_FORMATS) and extensions which are supported by the google gemini api. Example below
+    - image(png, jpg, jpeg, gif)
+    - text(txt, csv, json)
+    - pdf(pdf)
+    - video(mp4, avi, mov)
+    - audio(mp3, wav, flac)
+check google gemini api for the full supported file extensions
+
+An input can be a local file, link or a local folder
+if file, Input files have size limit of X MB if more than X MB, we will upload the to the client using the File APIserver
+    - if file is of type image, we will read the image and pass it to the model using pillow. use the goole gemini reference documentation i have provided below.
+    - if file is of type text, we will read the text and pass it to the model
+    - if file is of type pdf, we will read the pdf and pass it to the model. use the google gemini reference documentation i have provided below. 
+    - if file is of type video, we will read the video and pass it to the model. use the google gemini reference documentation i have provided below.
+    - if file is of type audio, we will read the audio and pass it to the model. use the google gemini reference documentation i have provided below.
+if folder 
+    - If folder is passed, check if the folder is empty
+    - Loop for each file passed our filter(supported extentions + filter parameters if given by user) and procees as per above steps for input file.
+
+Our cli allows user to save file by -o
+
+Our cli support different models, user can pass one or more values for models parameter.
+A model is our mapping to gemini models, a user can pass different models for different use cases.
+When passed multiple models we will run the models in parallel and save the output for all the models with name <model_name>_<first two words of prompt>_<timestamp>.<file_extension>
+    - if model is not passed, we will use the default model
+    - if model is passed, we will use the model passed by user
+    - if model is not supported, we will show error message and exit
+    - if model is unknown, we will use show error message and exit
+    - if list of models is passed, we will run all the models in parallel and save the output for all the models with name <model_name>_<first two words of prompt>_<timestamp>.<file_extension>
+
+Modesl will usually return a string or a file(pdf, image, video, audio)
+Our cli shows output for text models but for other models we will save the output to a file by default, using -o will allow user to save the output to a file
+or a folder
+    - if file, save the output to the file
+    - if folder, save the output to the folder
+
+We can save the output as per our supported FILE_FORMATS
+
+- Models 
+Reference: 
+https://ai.google.dev/gemini-api/docs/document-processing?lang=python
+https://ai.google.dev/gemini-api/docs/text-generation
+https://ai.google.dev/gemini-api/docs/audio?lang=python
+https://ai.google.dev/gemini-api/docs/vision?lang=python
+
+MODEL_MAP = {
+    "default": "gemini-1.5-pro-latest",
+    "flash": "gemini-1.5-pro",
+    "vision": "gemini-1.0-pro-vision-latest",
+    "imagen": "imagen-3.0-generate-002",
+    "unknown-model": "gemini-unknown"
+}
+
+FILE_FORMATS = {
+    "image": ["png", "jpg", "jpeg", "gif"],
+    "text": ["txt", "csv", "json", ".xml", "html", ".java", "cpp", "py"],
+    "pdf": ["pdf"],
+    "video": ["mp4", "avi", "mov"],
+    "audio": ["mp3", "wav", "flac"]
+}
+
+This cli will allow me to quickly interact with gemini and view output or save the output to a file.
+- i generally use cli to interact and get md files or images or text files
+- generate images or videos from text, pdfs, images
+- generate audio or podcast from texts, pdfs, images
+- research papers or articles from texts, pdfs, images
+- discussion or chat with the model, in addition can set context by passing input files/folders.
+- analysing a code file or a folder
+- generating code and save to a file
+
+In future we will also be adding chat mode for the cli, so that user can chat with the model
+Integrating an Agent to apply suggested code edits to the files.
+Comparing output of different models by passing different models as list
+
+
