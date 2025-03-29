@@ -1,3 +1,0 @@
-You are given a text file containing a list of questions and answers.
-Your task is to extract the questions and answers, and format them into a structured note-taking format. 
-return output with each question as a header and the corresponding answer as a paragraph below it.

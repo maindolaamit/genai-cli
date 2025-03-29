@@ -1,21 +1,22 @@
 import argparse
-import os
-import logging
-import time
-import re
 import datetime  # Import datetime for timestamp
+import os
+import re
 import signal
 import sys
+
 from .api_interface import interact_with_gemini_api
 from .utils import setup_logger, read_file, validate_file_path  # Removed get_file_extension_from_mime
 
 # Initialize logger
 logger = setup_logger()
 
+
 # Signal handler for graceful exit
 def signal_handler(sig, frame):
     logger.info("Received signal to terminate. Cleaning up and exiting gracefully.")
     sys.exit(0)
+
 
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
@@ -44,26 +45,26 @@ MODEL_MAP = {
         "outputs": ["text"],
         "default_output": "text"
     },
-    "vision": { # Mapping 'vision' to flash as a capable multimodal model
+    "vision": {  # Mapping 'vision' to flash as a capable multimodal model
         "name": "gemini-1.5-flash-latest",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
         "default_output": "text"
     },
     "imagen": {
-        "name": "imagen-3.0-generate-002", # Example name, verify actual latest Imagen model
+        "name": "imagen-3.0-generate-002",  # Example name, verify actual latest Imagen model
         "inputs": ["text"],
         "outputs": ["image"],
         "default_output": "image"
     },
     "flash-img": {
-        "name": "gemini-2.0-flash-exp-image-generation", # Example name, verify actual latest Imagen model
+        "name": "gemini-2.0-flash-exp-image-generation",  # Example name, verify actual latest Imagen model
         "inputs": ["text"],
         "outputs": ["image"],
         "default_output": "image"
     },
     # Add other aliases or models as needed
-    "default": { # Default maps to flash
+    "default": {  # Default maps to flash
         "name": "gemini-1.5-flash-latest",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
@@ -74,6 +75,7 @@ MODEL_MAP = {
 
 # Default model alias if -m is not specified
 DEFAULT_MODEL_ALIAS = "default"
+
 
 def generate_output_filename(model_name, prompt_text, output_type, output_dir=None):
     """Generates a filename based on prompt, model, timestamp, and output type.
@@ -88,28 +90,56 @@ def generate_output_filename(model_name, prompt_text, output_type, output_dir=No
         Full path to the generated filename
     """
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    
+
     # Extract first four words from prompt, lowercase, kebab-case
     prompt_words = prompt_text.split()[:4] if prompt_text else ["output"]
     kebab_prefix = "-".join(prompt_words).lower()
-    kebab_prefix = re.sub(r'[^a-z0-9\-]+', '', kebab_prefix) # Sanitize for filename
+    kebab_prefix = re.sub(r'[^a-z0-9\-]+', '', kebab_prefix)  # Sanitize for filename
 
     # Determine file extension
-    extension = "txt" # Default
+    extension = "txt"  # Default
     if output_type == 'image':
-        extension = "jpg" # Assuming JPG for images, adjust if needed
-    # Add more extensions for audio/video if supported later
-    
+        extension = "jpg"  # Assuming JPG for images, adjust if needed
+    elif output_type == 'audio':
+        extension = "mp3"
+    elif output_type == 'video':
+        extension = "mp4"
+
     # Sanitize model name for filename
     safe_model_name = model_name.replace('/', '_').replace('.', '_')
 
     filename = f"{kebab_prefix}_{safe_model_name}_{timestamp}.{extension}"
-    
+
     # If output_dir is provided, join with the filename
     if output_dir:
         return os.path.join(output_dir, filename)
     else:
         return filename
+
+
+def handle_output_path(output_path, model_name=None, prompt_text=None, output_type=None):
+    if output_path is None and output_type == 'text':
+        return None
+
+    # Determine the actual output path
+    if output_path == '' or (output_path is None and output_type != 'text'):
+        # Empty -o flag, generate default filename
+        output_path = generate_output_filename(model_name, prompt_text, output_type)
+        logger.info(f"Empty output path specified, using generated filename: {output_path}")
+    elif os.path.isdir(output_path):
+        # If a directory was provided, generate filename in that directory
+        output_path = generate_output_filename(model_name, prompt_text, output_type, output_path)
+        logger.info(f"Directory specified for output, using: {output_path}")
+    # Otherwise, use the provided path as-is
+
+    # Ensure directory exists
+    output_dir = os.path.dirname(output_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        logger.info(f"Created output directory: {output_dir}")
+
+    return output_path
+
 
 def main():
     parser = argparse.ArgumentParser(description='Interact with the Gemini API.')
@@ -117,18 +147,19 @@ def main():
     # Prompt is now optional if input is provided
     parser.add_argument('-p', '--prompt', type=str, help='Text prompt or path to a file containing the prompt.')
     parser.add_argument('-i', '--input', type=str, help='Path to an input file or folder.')
-    parser.add_argument('-f', '--filter', type=str, help='Filter pattern for files in a folder (e.g., "*.txt", "*.jpg").')
-    
+    parser.add_argument('-f', '--filter', type=str,
+                        help='Filter pattern for files in a folder (e.g., "*.txt", "*.jpg").')
+
     # Modified output argument to handle empty flag case
-    parser.add_argument('-o', '--output', nargs='?', const='', default=None, 
-                      help='Optional path to save the output file. If flag is present with no value, a filename is auto-generated.')
-    
+    parser.add_argument('-o', '--output', nargs='?', const='', default=None,
+                        help='Optional path to save the output file. If flag is present with no value, a filename is auto-generated.')
+
     # Output type default is now None, will be inferred
-    parser.add_argument('-t', '--output-type', choices=['text', 'image'], default=None, 
-                      help='Type of output to generate (default: inferred from model).')
+    parser.add_argument('-t', '--output-type', choices=['text', 'image'], default=None,
+                        help='Type of output to generate (default: inferred from model).')
     # Model default uses the constant
-    parser.add_argument('-m', '--model', type=str, default=DEFAULT_MODEL_ALIAS, 
-                      help=f'Model alias to use (default: "{DEFAULT_MODEL_ALIAS}"). Choices: {", ".join(MODEL_MAP.keys())}')
+    parser.add_argument('-m', '--model', type=str, default=DEFAULT_MODEL_ALIAS,
+                        help=f'Model alias to use (default: "{DEFAULT_MODEL_ALIAS}"). Choices: {", ".join(MODEL_MAP.keys())}')
 
     args = parser.parse_args()
 
@@ -146,7 +177,8 @@ def main():
 
     if not model_details:
         logger.error(f"Model alias '{model_alias}' not recognized. Valid aliases are: {', '.join(MODEL_MAP.keys())}")
-        parser.exit(1)
+        # parser.exit(1)
+        return
 
     model_name = model_details["name"]
     logger.info(f"Using model: {model_name} (alias: '{model_alias}')")
@@ -159,8 +191,10 @@ def main():
     else:
         # Validate if the requested output type is supported by the model
         if output_type not in model_details["outputs"]:
-            logger.error(f"Model '{model_name}' (alias: '{model_alias}') does not support the requested output type '{output_type}'. Supported types: {', '.join(model_details['outputs'])}")
-            parser.exit(1)
+            logger.error(
+                f"Model '{model_name}' (alias: '{model_alias}') does not support the requested output type '{output_type}'. Supported types: {', '.join(model_details['outputs'])}")
+            # parser.exit(1)
+            return
         logger.info(f"Requested output type: '{output_type}'")
 
     # --- Process Prompt ---
@@ -169,7 +203,7 @@ def main():
         if os.path.isfile(args.prompt):
             logger.info(f"Prompt argument '{args.prompt}' is a file path.")
             try:
-                validate_file_path(args.prompt) # Basic validation
+                validate_file_path(args.prompt)  # Basic validation
                 prompt_text = read_file(args.prompt)
                 logger.info(f"Using content from file '{args.prompt}' as prompt.")
             except Exception as e:
@@ -186,48 +220,28 @@ def main():
             prompt=prompt_text,
             input_path=args.input,
             file_filter=args.filter,
-            output_type=output_type, # Pass determined output type
-            model_name=model_name,   # Pass actual model name
-            model_capabilities=model_details # Pass capabilities for potential use in api_interface
+            output_type=output_type,  # Pass determined output type
+            model_name=model_name,  # Pass actual model name
+            model_capabilities=model_details  # Pass capabilities for potential use in api_interface
         )
 
         if response_data is None:
-             logger.error("API interaction failed to return data.")
-             parser.exit(1)
+            logger.error("API interaction failed to return data.")
+            parser.exit(1)
 
         # --- Output Handling ---
         output_path = args.output
+        output_path = handle_output_path(output_path, model_name, prompt_text, output_type)
+
         is_binary_output = isinstance(response_data, bytes)
-        
+
         # For text output: print to console by default, save to file ONLY if -o is specified
         if output_type == 'text' and not is_binary_output:
             # Always print text output to console
             print(response_data)
-            logger.info("Text output printed to console")
-            
+
             # Only save to file if -o was provided (either empty or with value)
             if output_path is not None:
-                # Determine the actual output path
-                if output_path == '':
-                    # Empty -o flag, generate default filename
-                    output_path = generate_output_filename(model_name, prompt_text, output_type)
-                    logger.info(f"Empty output path specified, using generated filename: {output_path}")
-                elif os.path.isdir(output_path):
-                    # If a directory was provided, generate filename in that directory
-                    output_path = generate_output_filename(model_name, prompt_text, output_type, output_path)
-                    logger.info(f"Directory specified for output, using: {output_path}")
-                # Otherwise, use the provided path as-is
-                
-                # Ensure directory exists
-                output_dir = os.path.dirname(output_path)
-                if output_dir and not os.path.exists(output_dir):
-                    try:
-                        os.makedirs(output_dir)
-                        logger.info(f"Created output directory: {output_dir}")
-                    except OSError as e:
-                        logger.error(f"Failed to create output directory {output_dir}: {e}")
-                        parser.exit(1)
-                
                 # Save the file
                 try:
                     with open(output_path, 'w', encoding='utf-8') as f:
@@ -237,31 +251,6 @@ def main():
                     logger.error(f"Failed to write output to {output_path}: {e}")
                     parser.exit(1)
         else:
-            # For non-text outputs (binary): always save to file
-            if output_path is None:
-                # No -o flag, generate default filename
-                output_path = generate_output_filename(model_name, prompt_text, output_type)
-                logger.info(f"No output path specified, saving to generated filename: {output_path}")
-            elif output_path == '':
-                # Empty -o flag, generate default filename
-                output_path = generate_output_filename(model_name, prompt_text, output_type)
-                logger.info(f"Empty output path specified, using generated filename: {output_path}")
-            elif os.path.isdir(output_path):
-                # If a directory was provided, generate filename in that directory
-                output_path = generate_output_filename(model_name, prompt_text, output_type, output_path)
-                logger.info(f"Directory specified for output, using: {output_path}")
-            # Otherwise, use the provided path as-is
-
-            # Ensure directory exists
-            output_dir = os.path.dirname(output_path)
-            if output_dir and not os.path.exists(output_dir):
-                try:
-                    os.makedirs(output_dir)
-                    logger.info(f"Created output directory: {output_dir}")
-                except OSError as e:
-                    logger.error(f"Failed to create output directory {output_dir}: {e}")
-                    parser.exit(1)
-
             # Write binary output to file
             try:
                 with open(output_path, 'wb') as f:
@@ -273,7 +262,7 @@ def main():
             except Exception as e:
                 logger.error(f"An unexpected error occurred while writing output: {e}")
                 parser.exit(1)
-        
+
         # Force a clean exit
         sys.exit(0)
 

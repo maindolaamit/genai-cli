@@ -1,50 +1,72 @@
 import os
+
 from .gemini_api import GeminiAPI
 from .utils import (
-    validate_file_path, validate_folder_path, read_file, 
-    process_image, process_pdf, process_text_file, process_audio, process_video,
-    get_file_type, validate_file_size, get_files_from_folder, validate_file_type,
-    setup_logger, FILE_FORMATS
+    validate_file_path, validate_folder_path, get_file_type, get_files_from_folder, setup_logger
 )
 
 # Initialize logger 
 logger = setup_logger('api_interface')
 
-def process_input_file(file_path, file_type=None):
+ALLOWED_FILE_COUNT = 5  # Maximum number of files to process at once
+
+
+def get_input_files(input_path, file_filter, model_name, allowed_file_types=None):
     """
-    Process an input file based on its type.
-    
-    Args:
-        file_path (str): Path to the file.
-        file_type (str, optional): Type of file. If None, determined from extension.
-    
-    Returns:
-        tuple: (processed_data, file_type)
+    Get input files based on the provided input path and filter.
+
+    :param model_name:
+    :param input_path:
+    :param file_filter:
+    :param allowed_file_types:
+    :return:
     """
-    # Validate file exists and is within size limits
-    validate_file_path(file_path)
-    validate_file_size(file_path)
-    
-    # Determine file type if not provided
-    if file_type is None:
-        file_type = get_file_type(file_path)
-        if file_type is None:
-            extension = os.path.splitext(file_path)[1].lower()
-            raise ValueError(f"Unsupported file type: {extension}")
-    
-    # Process file based on its type
-    if file_type == 'image':
-        return process_image(file_path), file_type
-    elif file_type == 'pdf':
-        return process_pdf(file_path), file_type
-    elif file_type == 'text':
-        return process_text_file(file_path), file_type
-    elif file_type == 'audio':
-        return process_audio(file_path), file_type
-    elif file_type == 'video':
-        return process_video(file_path), file_type
+    if allowed_file_types is None:
+        allowed_file_types = []
+    if not input_path:
+        return []
+
+    # Handle multimodal or text models with file/folder input
+    logger.info(f"Input path provided: {input_path}")
+    files = []
+
+    # --- Folder Input Logic ---
+    if os.path.isdir(input_path):
+        logger.info(f"Input path is a folder: {input_path}")
+        validate_folder_path(input_path)
+        files = get_files_from_folder(input_path, file_filter)
+        if not files:
+            raise ValueError(f"No matching files found in folder: {input_path}")
+        logger.info(f"Found {len(files)} matching files in folder")
+    # --- Single File Input Logic ---
+    elif os.path.isfile(input_path):
+        logger.info(f"Input path is a file: {input_path}")
+        validate_file_path(input_path)
+        files.append(input_path)
     else:
-        raise ValueError(f"Unsupported file type: {file_type}")
+        raise ValueError(f"Invalid input path: {input_path}")
+
+    # Handle text-only prompt (no file input) for text models
+    processed_files = []
+    count = 1
+    for file_path in files:
+        try:
+            file_type = get_file_type(file_path)
+            if file_type and file_type in allowed_file_types:
+                logger.info(f"Processing file: {file_path} (type: {file_type})")
+                processed_files.append({
+                    'path': file_path,
+                    'type': file_type,
+                })
+                count += 1
+            elif file_type:
+                logger.warning(
+                    f"Skipping file {file_path}: type '{file_type}' not supported by model '{model_name}'")
+        except Exception as e:
+            logger.warning(f"Error processing file {file_path}: {e}")
+
+    return processed_files[:ALLOWED_FILE_COUNT]
+
 
 def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model_name, model_capabilities):
     """
@@ -73,142 +95,50 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
     gemini_api = GeminiAPI(api_key)
 
     # Process prompt text (if it's a string or file)
-    prompt_text = ""
-    if prompt:
-        if os.path.isfile(prompt):
-            logger.info(f"Prompt '{prompt}' is a file path.")
-            try:
-                validate_file_path(prompt)
-                prompt_text = read_file(prompt)
-                logger.info(f"Using content from file '{prompt}' as prompt.")
-            except FileNotFoundError as e:
-                logger.error(f"File not found error for prompt file '{prompt}'.")
-                logger.error(f"Error: Prompt file not found: {e}")
-                return None
-            except Exception as e:
-                logger.error(f"An unexpected error occurred while reading prompt file: {e}")
-                return None
-        else:
-            # Use the prompt as-is if it's not a file path
-            prompt_text = prompt
+    prompt_text = prompt
+
+    input_files = get_input_files(input_path, file_filter, model_name)
 
     # --- Determine API call based on input and model capabilities ---
-
-    # Check if the model is primarily for image generation (like Imagen)
-    is_image_gen_model = 'image' in model_capabilities['outputs'] and 'text' not in model_capabilities['outputs']
-
-    if is_image_gen_model or output_type == 'image':
-        # Handle image generation models (expects text prompt, outputs image)
-        if input_path:
-            logger.warning(f"Model '{model_name}' is used for image generation and may not support file inputs. Ignoring input path '{input_path}'.")
-        if not prompt_text:
-            raise ValueError(f"Image generation model '{model_name}' requires a text prompt.")
-
-        logger.info(f"Sending text prompt to generate image with model: {model_name}")
+    if output_type == 'text':
         try:
-            # Pass the output_type to send_text_prompt
-            response_dict = gemini_api.send_text_prompt(
-                prompt_text, 
+            response = gemini_api.generate_text_content(
+                prompt=prompt_text,
                 model=model_name,
-                output_type='image'
+                input_files=input_files,
             )
-            
-            if 'error' in response_dict:
-                logger.warning(f"Error in image generation: {response_dict['error']}")
-                return response_dict.get('response', b'')
-            
-            # Return the response (could be image bytes or error text)
-            return response_dict.get('response', b'')
+            return response.get('response', 'No response text found' if output_type == 'text' else b'')
         except Exception as e:
-            logger.error(f"API request failed for image generation: {str(e)}", exc_info=True)
-            raise Exception(f"Image generation failed: {e}") from e
-
-    elif input_path:
-        # Handle multimodal or text models with file/folder input
-        logger.info(f"Input path provided: {input_path}")
-
-        # --- Folder Input Logic ---
-        if os.path.isdir(input_path):
-            logger.info(f"Input path is a folder: {input_path}")
-            validate_folder_path(input_path)
-            files = get_files_from_folder(input_path, file_filter)
-            if not files:
-                raise ValueError(f"No matching files found in folder: {input_path}")
-            logger.info(f"Found {len(files)} matching files in folder")
-
-            processed_files = []
-            for file_path in files:
-                try:
-                    file_type = get_file_type(file_path)
-                    if file_type and file_type in model_capabilities['inputs']:
-                        logger.info(f"Processing file: {file_path} (type: {file_type})")
-                        processed_files.append({
-                            'path': file_path,
-                            'type': file_type,
-                        })
-                    elif file_type:
-                        logger.warning(f"Skipping file {file_path}: type '{file_type}' not supported by model '{model_name}'")
-                except Exception as e:
-                    logger.warning(f"Error processing file {file_path}: {e}")
-
-            if not processed_files:
-                raise ValueError("No supported files could be processed from the folder.")
-
-            # Handle the processed files (currently only handling the first file)
-            if processed_files:
-                first_file = processed_files[0]
-                logger.info(f"Using first file for API request: {first_file['path']}")
-                try:
-                    response = gemini_api.send_file_prompt(
-                        first_file['path'],
-                        prompt=prompt_text,
-                        model=model_name,
-                        output_type=output_type
-                    )
-                    return response.get('response', 'No response text found' if output_type == 'text' else b'')
-                except Exception as e:
-                    raise Exception(f"API request failed for folder input: {e}") from e
-
-        # --- Single File Input Logic ---
-        elif os.path.isfile(input_path):
-            logger.info(f"Input path is a file: {input_path}")
-            validate_file_path(input_path)
-            try:
-                file_type = get_file_type(input_path)
-                if not file_type:
-                    raise ValueError(f"Unsupported file type for {input_path}")
-                if file_type not in model_capabilities['inputs']:
-                    raise ValueError(f"Model '{model_name}' does not support input file type '{file_type}'")
-
-                logger.info(f"File type detected: {file_type}")
-                validate_file_size(input_path)
-
-                logger.info(f"Sending file prompt for {output_type} generation: {input_path}")
-                response = gemini_api.send_file_prompt(
-                    input_path,
-                    prompt=prompt_text,
-                    model=model_name,
-                    output_type=output_type
-                )
-                logger.info("API call for file prompt successful")
-                return response.get('response', 'No response text found' if output_type == 'text' else b'')
-
-            except Exception as e:
-                raise Exception(f"Error processing input file: {e}") from e
-        else:
-            raise ValueError(f"Invalid input path: {input_path}")
-
-    # Handle text-only prompt (no file input) for text models
-    elif 'text' in model_capabilities['inputs']:
-        if not prompt_text:
-            raise ValueError("Either a prompt or input path must be provided")
-
-        logger.info(f"Sending text-only prompt to API model: {model_name}")
+            raise Exception(f"API request failed for folder input: {e}") from e
+    elif output_type == 'image':
         try:
-            response = gemini_api.send_text_prompt(prompt_text, model=model_name)
-            logger.debug(f"API response: {response}")
-            return response.get('response', 'No response text found')
+            response = gemini_api.generate_image_content(
+                prompt=prompt_text,
+                model=model_name,
+                input_files=input_files,
+            )
+            return response
         except Exception as e:
-            raise Exception(f"API request failed for text prompt: {e}") from e
+            raise Exception(f"API request failed for folder input: {e}") from e
+    elif output_type == 'audio':
+        try:
+            response = gemini_api.generate_audio_content(
+                prompt=prompt_text,
+                model=model_name,
+                input_files=input_files,
+            )
+            return response
+        except Exception as e:
+            raise Exception(f"API request failed for folder input: {e}") from e
+    elif output_type == 'video':
+        try:
+            response = gemini_api.generate_video_content(
+                prompt=prompt_text,
+                model=model_name,
+                input_files=input_files,
+            )
+            return response
+        except Exception as e:
+            raise Exception(f"API request failed for folder input: {e}") from e
     else:
-        raise ValueError(f"Model '{model_name}' does not support text-only input.")
+        raise ValueError(f"Unsupported output type: {output_type}")
