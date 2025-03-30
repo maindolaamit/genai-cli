@@ -22,6 +22,9 @@ def get_processed_file_content(file_path, file_type, client):
 
     Returns:
         tuple: (processed_data, file_type)
+        :param file_path:
+        :param file_type:
+        :param client:
     """
     # Check if a file exists and is within size limits
     validate_file_path(file_path)
@@ -57,7 +60,7 @@ def get_processed_file_content(file_path, file_type, client):
 
 
 class GeminiAPI:
-    def __init__(self, api_key, base_url=None):
+    def __init__(self, api_key):
         self.api_key = api_key
         # Initialize the Google Generative AI client
         self.client = genai.Client(api_key=api_key)
@@ -75,7 +78,8 @@ class GeminiAPI:
         with open(output_path, mode) as f:
             f.write(data_to_save)
 
-    def get_default_models(self):
+    @staticmethod
+    def get_default_models():
         # This method might be less relevant now or could list model keys from cli.py's MODEL_MAP
         # For now, returning the hardcoded list as before.
         return ['gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro']
@@ -85,12 +89,14 @@ class GeminiAPI:
         contents = [prompt]
         config = GenerateContentConfig()
         # loop for files and add to contents
-        for file_path in input_files:
-            contents.append(get_processed_file_content(file_path))
+        for file in input_files:
+            logger.info(f"Processing file: {file}")
+            contents.append(get_processed_file_content(file["path"], file["type"], self.client))
 
         if instructions:
             config.system_instruction = instructions
 
+        # Handle text generation
         response = self.client.models.generate_content(
             model=model,
             contents=contents,
@@ -101,7 +107,6 @@ class GeminiAPI:
         return {
             'response': response.text,
             'model': model,
-            config: config
         }
 
     def generate_image_content(self, prompt, model, input_files, instructions=None):

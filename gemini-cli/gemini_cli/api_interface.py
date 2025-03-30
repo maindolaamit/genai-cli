@@ -11,7 +11,7 @@ logger = setup_logger('api_interface')
 ALLOWED_FILE_COUNT = 5  # Maximum number of files to process at once
 
 
-def get_input_files(input_path, file_filter, model_name, allowed_file_types=None):
+def get_input_files(input_path, file_filter, model_name, allowed_file_types):
     """
     Get input files based on the provided input path and filter.
 
@@ -21,8 +21,6 @@ def get_input_files(input_path, file_filter, model_name, allowed_file_types=None
     :param allowed_file_types:
     :return:
     """
-    if allowed_file_types is None:
-        allowed_file_types = []
     if not input_path:
         return []
 
@@ -97,7 +95,7 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
     # Process prompt text (if it's a string or file)
     prompt_text = prompt
 
-    input_files = get_input_files(input_path, file_filter, model_name)
+    input_files = get_input_files(input_path, file_filter, model_name, model_capabilities['inputs'])
 
     # --- Determine API call based on input and model capabilities ---
     if output_type == 'text':

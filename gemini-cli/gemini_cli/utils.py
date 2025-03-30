@@ -46,28 +46,13 @@ def load_environment_variable(var_name):
 
 def process_image(image_path):
     """Process an image file and convert it to base64 for the Gemini API."""
-    import base64
     from PIL import Image
-    import io
 
+    # Validate file exists and is within size limits
+    validate_file_path(image_path)
+    validate_file_size(image_path)
     # Open and process the image
-    with Image.open(image_path) as img:
-        # Convert to RGB if it's not already (e.g., if it's RGBA)
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-
-        # Resize image if needed
-        # img = img.resize((800, 800))  # Optional resize
-
-        # Convert to bytes
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG")
-        image_bytes = buffer.getvalue()
-
-        # Encode to base64
-        base64_encoded = base64.b64encode(image_bytes).decode("utf-8")
-
-        return base64_encoded
+    return Image.open(image_path)
 
 
 def process_pdf(pdf_path):
