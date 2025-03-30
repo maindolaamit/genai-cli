@@ -51,7 +51,6 @@ def get_input_files(input_path, file_filter, model_name, allowed_file_types):
         try:
             file_type = get_file_type(file_path)
             if file_type and file_type in allowed_file_types:
-                logger.info(f"Processing file: {file_path} (type: {file_type})")
                 processed_files.append({
                     'path': file_path,
                     'type': file_type,

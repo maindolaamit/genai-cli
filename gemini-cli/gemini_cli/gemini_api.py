@@ -90,7 +90,7 @@ class GeminiAPI:
         config = GenerateContentConfig()
         # loop for files and add to contents
         for file in input_files:
-            logger.info(f"Processing file: {file}")
+            logger.info(f"Processing input: {file}")
             contents.append(get_processed_file_content(file["path"], file["type"], self.client))
 
         if instructions:

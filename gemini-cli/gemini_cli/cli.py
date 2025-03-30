@@ -171,32 +171,6 @@ def main():
         logger.error(f'The specified input path does not exist: {args.input}')
         parser.exit(1)
 
-    # --- Model Selection and Validation ---
-    model_alias = args.model
-    model_details = MODEL_MAP.get(model_alias)
-
-    if not model_details:
-        logger.error(f"Model alias '{model_alias}' not recognized. Valid aliases are: {', '.join(MODEL_MAP.keys())}")
-        # parser.exit(1)
-        return
-
-    model_name = model_details["name"]
-    logger.info(f"Using model: {model_name} (alias: '{model_alias}')")
-
-    # --- Determine Output Type ---
-    output_type = args.output_type
-    if output_type is None:
-        output_type = model_details["default_output"]
-        logger.info(f"Output type not specified, defaulting to model's default: '{output_type}'")
-    else:
-        # Validate if the requested output type is supported by the model
-        if output_type not in model_details["outputs"]:
-            logger.error(
-                f"Model '{model_name}' (alias: '{model_alias}') does not support the requested output type '{output_type}'. Supported types: {', '.join(model_details['outputs'])}")
-            # parser.exit(1)
-            return
-        logger.info(f"Requested output type: '{output_type}'")
-
     # --- Process Prompt ---
     prompt_text = ""
     if args.prompt:
@@ -213,7 +187,59 @@ def main():
             prompt_text = args.prompt
             logger.info("Using provided text as prompt.")
 
-    # --- API Interaction ---
+    # --- Output Handling ---
+    output_path = args.output
+
+    # --- Determine Output Type ---
+    output_type = args.output_type
+
+    # --- Model Selection and Validation ---
+    model_alias = args.model
+
+    # can be multiple models like -m flash, imagen
+    model_aliases = model_alias.strip().split(',')
+    # models_count = len(model_aliases)
+    # if more than one model is specified, need to save the output even if not specified
+    # if models_count > 1 and output_path is None:
+    #     output_path = ''
+    logger.info(f"Model aliases provided: {model_aliases}")
+
+    # check if all aliases are valid
+    for model_alias in model_aliases:
+        model_details = MODEL_MAP.get(model_alias)
+        model_name = model_details["name"]
+
+        if not model_details:
+            logger.error(
+                f"Model alias '{model_alias}' not recognized. Valid aliases are: {', '.join(MODEL_MAP.keys())}")
+            parser.exit(1)
+
+        if output_type is None:
+            output_type = model_details["default_output"]
+            logger.info(f"Output type not specified, defaulting to model's default: '{output_type}'")
+        else:
+            # Validate if the requested output type is supported by the model
+            if output_type not in model_details["outputs"]:
+                logger.error(
+                    f"Model '{model_name}' (alias: '{model_alias}') does not support the requested output type '{output_type}'. Supported types: {', '.join(model_details['outputs'])}")
+                parser.exit(1)
+
+        logger.info(f"Requested output type: '{output_type}'")
+        # --- API Interaction ---
+        generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text, output_path)
+
+    # Force a clean exit
+    sys.exit(0)
+
+
+def generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text, output_path=None):
+    model_name = model_details["name"]
+
+    # Log the start of content generation
+    logger.info("")
+    logger.info("=========================================")
+    logger.info("Starting content generation...")
+    logger.info(f"Using model: {model_name} (alias: '{model_alias}')")
     try:
         # Pass the actual model name and determined output type
         response_data = interact_with_gemini_api(
@@ -227,10 +253,9 @@ def main():
 
         if response_data is None:
             logger.error("API interaction failed to return data.")
-            parser.exit(1)
+            sys.exit(1)
 
         # --- Output Handling ---
-        output_path = args.output
         output_path = handle_output_path(output_path, model_name, prompt_text, output_type)
 
         is_binary_output = isinstance(response_data, bytes)
@@ -249,7 +274,7 @@ def main():
                     logger.info(f"Text output saved to {output_path}")
                 except IOError as e:
                     logger.error(f"Failed to write output to {output_path}: {e}")
-                    parser.exit(1)
+                    sys.exit(1)
         else:
             # Write binary output to file
             try:
@@ -258,13 +283,10 @@ def main():
                 logger.info(f"Output successfully saved to {output_path}")
             except IOError as e:
                 logger.error(f"Failed to write output to {output_path}: {e}")
-                parser.exit(1)
+                sys.exit(1)
             except Exception as e:
                 logger.error(f"An unexpected error occurred while writing output: {e}")
-                parser.exit(1)
-
-        # Force a clean exit
-        sys.exit(0)
+                sys.exit(1)
 
     except Exception as e:
         logger.error(f"An error occurred during API interaction or processing: {e}", exc_info=True)

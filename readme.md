@@ -90,6 +90,7 @@ File size is limited to 20MB for all formats.
 
     ```bash
     gemini-cli -p ./prompts/test.txt -o output.txt
+    gemini-cli -p ./resources/prompts/questions.txt -i ./resources/questions.txt 
     ```
 
     This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
@@ -99,6 +100,7 @@ File size is limited to 20MB for all formats.
     ```bash
     gemini-cli -i ./resources/diagram.png -p "Explain this diagram in detail"
     gemini-cli -i ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
+    gemini-cli -i ./resources -f "trx*.png" -p "summarize the transactions and return in md table" -o 
     ```
 
 -   Analyze Text Files:

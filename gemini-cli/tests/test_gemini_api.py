@@ -30,14 +30,14 @@ class TestGeminiAPI(unittest.TestCase):
         # Mock the API response
         mock_response_obj = Mock()
         mock_response_obj.text = "This is a test response from Gemini API"
-        mock_generative_model.return_value.generate_content.return_value = mock_response_obj
+        mock_generative_model.return_value.generate_content_and_save.return_value = mock_response_obj
 
         # Send a text prompt
         response = self.gemini_api.send_text_prompt("What is the capital of France?")
 
         # Verify the request was properly formatted
         mock_generative_model.assert_called_once_with('gemini-pro')
-        mock_generative_model.return_value.generate_content.assert_called_once_with("What is the capital of France?")
+        mock_generative_model.return_value.generate_content_and_save.assert_called_once_with("What is the capital of France?")
 
         # Verify response
         self.assertEqual(response, {"response": "This is a test response from Gemini API", 'model': 'gemini-pro'})
@@ -45,7 +45,7 @@ class TestGeminiAPI(unittest.TestCase):
     @patch('google.generativeai.GenerativeModel')
     def test_send_text_prompt_failure(self, mock_generative_model):
         # Mock a failed API response
-        mock_generative_model.return_value.generate_content.side_effect = Exception("API Error")
+        mock_generative_model.return_value.generate_content_and_save.side_effect = Exception("API Error")
 
         # Test that an exception is raised for a failed request
         with self.assertRaises(Exception) as context:
