@@ -1,284 +1,186 @@
-import os
-import tempfile
-from typing import Dict, List, Any, Union, Optional
+import json
 
-from PIL import Image
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+from google.genai.types import GenerateContentConfig
 
-from .utils import (
-    validate_file_path,
-    setup_logger,
-    is_validate_file_size,
-    process_image,
-    process_text_file,
-    process_pdf,
-    process_audio,
-    process_video
-)
+from .utils import process_image, setup_logger, \
+    is_validate_file_size, process_pdf, process_audio, read_file, \
+    validate_file_path  # Changed import to relative
 
-# Initialize the logger
-logger = setup_logger()
+# Initialize logger
+logger = setup_logger('gemini_api')
+
+
+def get_processed_file_content(file_path, file_type, client):
+    """
+    Process an input file based on its type.
+
+    Args:
+        file_path (str): Path to the file.
+        file_type (str, optional): Type of file. If None, determined from extension.
+
+    Returns:
+        tuple: (processed_data, file_type)
+        :param file_path:
+        :param file_type:
+        :param client:
+    """
+    # Check if a file exists and is within size limits
+    validate_file_path(file_path)
+    if not is_validate_file_size(file_path):
+        return client.files.upload(file_path)
+
+    # Process file based on its type
+    if file_type == 'image':
+        return process_image(file_path)
+    elif file_type == 'pdf':
+        pdf_data = process_pdf(file_path)
+        return types.Part.from_bytes(
+            data=pdf_data,
+            mime_type='application/pdf',
+        )
+    elif file_type == 'text':
+        return read_file(file_path)
+    elif file_type == 'audio':
+        audio_bytes = process_audio(file_path)
+        return types.Part.from_bytes(
+            data=audio_bytes,
+            mime_type='audio/wav',
+        )
+    elif file_type == 'video':
+        # video_bytes = process_video(file_path), file_type
+        # return types.Part(
+        #     inline_data=types.Blob(data=video_bytes, mime_type='video/mp4')
+        # )
+        # for video always upload the file
+        return client.files.upload(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {file_type}")
+
 
 class GeminiAPI:
-    """
-    Client for the Gemini API that handles various types of content generation.
-    """
-    
-    def __init__(self):
-        """Initialize the Gemini API client with the API key from environment."""
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not found in environment variables.")
-        
-        genai.configure(api_key=api_key)
-        
-        # Keep track of uploaded files for cleanup
-        self._uploaded_files = []
-    
-    @property
-    def uploaded_files(self) -> List[str]:
-        """Return a list of file names that have been uploaded."""
-        return self._uploaded_files
-    
-    def delete_uploaded_files(self):
-        """Delete all uploaded files."""
-        for file_name in self._uploaded_files:
-            try:
-                genai.delete_file(file_name)
-                logger.info(f"Deleted uploaded file: {file_name}")
-            except Exception as e:
-                logger.warning(f"Failed to delete file {file_name}: {e}")
-        
-        self._uploaded_files = []
-    
-    def get_processed_file_content(self, file_path: str, file_type: str) -> Any:
-        """
-        Process a file based on its type and return content ready for the API.
-        
-        Args:
-            file_path (str): Path to the file.
-            file_type (str): Type of the file (image, text, pdf, audio, video).
-            
-        Returns:
-            Any: Processed content ready for the API.
-        """
-        validate_file_path(file_path)
-        
-        # Check if file is too large (>20MB) for direct upload
-        use_file_api = not is_validate_file_size(file_path)
-        
-        if use_file_api:
-            # File is too large, use File API
-            logger.info(f"File {file_path} is large, using File API")
-            try:
-                uploaded_file = genai.upload_file(path=file_path)
-                self._uploaded_files.append(uploaded_file.name)
-                return uploaded_file
-            except Exception as e:
-                logger.error(f"Failed to upload file {file_path}: {e}")
-                raise
-        
-        # Process file based on its type
+    def __init__(self, api_key):
+        self.api_key = api_key
+        # Initialize the Google Generative AI client
+        self.client = genai.Client(api_key=api_key)
+
+    def save_output(self, output, output_path):
+        # Assuming output is text data for JSON saving. Adjust if binary.
+        mode = 'w'
+        data_to_save = output
+        if isinstance(output, bytes):
+            mode = 'wb'
+        elif isinstance(output, dict) or isinstance(output, list):
+            data_to_save = json.dumps(output, indent=4)
+            mode = 'w'  # Ensure text mode for JSON string
+
+        with open(output_path, mode) as f:
+            f.write(data_to_save)
+
+    @staticmethod
+    def get_default_models():
+        # This method might be less relevant now or could list model keys from cli.py's MODEL_MAP
+        # For now, returning the hardcoded list as before.
+        return ['gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro']
+
+    def generate_text_content(self, prompt, model, input_files, instructions=None):
+        # Assuming input_files is a list of file paths
+        contents = [prompt]
+        config = GenerateContentConfig()
+        # loop for files and add to contents
+        for file in input_files:
+            logger.info(f"Processing input: {file}")
+            contents.append(get_processed_file_content(file["path"], file["type"], self.client))
+
+        if instructions:
+            config.system_instruction = instructions
+
+        # Handle text generation
+        response = self.client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=config
+        )
+
+        # Return the text response
+        return {
+            'response': response.text,
+            'model': model,
+        }
+
+    def generate_image_content(self, prompt, model, input_files, instructions=None):
+        # Assuming input_files is a list of file paths
+        contents = [prompt]
+        # loop for files and add to contents
+        for file in input_files:
+            contents.append(get_processed_file_content(file.path, file.type))
+
+        config = GenerateContentConfig()
+        config.response_modalities = ['Text', 'Image']
+
+        if instructions:
+            config.system_instruction = instructions
+
+        # Handle image generation
+        logger.debug(f"Using image generation with model: {model}")
+
         try:
-            if file_type == 'image':
-                return process_image(file_path)
-            elif file_type == 'text':
-                return process_text_file(file_path)
-            elif file_type == 'pdf':
-                return process_pdf(file_path)
-            elif file_type == 'audio':
-                return process_audio(file_path)
-            elif file_type == 'video':
-                return process_video(file_path)
-            else:
-                raise ValueError(f"Unsupported file type: {file_type}")
-        except Exception as e:
-            logger.error(f"Failed to process file {file_path}: {e}")
-            raise
-    
-    def generate_text_content(self, prompt_text: str, model: str) -> str:
-        """
-        Generate text content from a text prompt.
-        
-        Args:
-            prompt_text (str): The text prompt.
-            model (str): The model to use.
-            
-        Returns:
-            str: The generated text content.
-        """
-        try:
-            # Initialize the generative model
-            model_client = genai.GenerativeModel(model)
-            
-            # Prepare the contents
-            contents = [prompt_text]
-            
-            # Generate content
-            response = model_client.generate_content(contents=contents)
-            
-            return response.text
-        except Exception as e:
-            raise Exception(f"Error generating text content with model '{model}': {e}") from e
-    
-    def generate_image_content(self, prompt_text: str, model: str) -> bytes:
-        """
-        Generate image content from a text prompt.
-        
-        Args:
-            prompt_text (str): The text prompt.
-            model (str): The model to use.
-            
-        Returns:
-            bytes: The generated image content.
-        """
-        try:
-            # Initialize the generative model
-            model_client = genai.GenerativeModel(model)
-            
-            # Create generation config for image output
-            gen_config = genai.GenerationConfig(
-                response_mime_type='image/jpeg',
+            # Import the types module for configuration
+            from google.genai import types
+
+            # Generate image content
+            response = self.client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config
             )
-            
-            # Generate content
-            response = model_client.generate_content(
-                contents=prompt_text,
-                generation_config=gen_config
-            )
-            
-            # Extract image data or text response
-            if response.parts:
-                for part in response.parts:
-                    if hasattr(part, 'data') and part.data:
-                        return part.data
-                
-                # If we get here, we didn't find image data but there were response parts
-                logger.warning("No image data found in response")
-                text_response = "".join([part.text for part in response.parts if hasattr(part, 'text')])
-                return text_response
-            
-            # Fallback to response.text if no parts found
-            if hasattr(response, 'text') and response.text:
-                return response.text
-            
-            raise ValueError("No content returned from the model")
-        except Exception as e:
-            raise Exception(f"Error generating image content with model '{model}': {e}") from e
-    
-    def send_file_prompt(self, file_path: str, model: str, prompt_text: Optional[str] = None) -> Union[str, bytes]:
-        """
-        Sends the content of a file as a prompt to the Gemini model.
-        
-        Args:
-            file_path (str): Path to the file to use as input.
-            model (str): The model to use.
-            prompt_text (str, optional): Additional text prompt to accompany the file.
-            
-        Returns:
-            Union[str, bytes]: The response from the model, either text or binary data.
-        """
-        try:
-            if file_path.endswith((".txt", ".csv", ".json", ".xml", ".html", ".java", ".cpp", ".py")):
-                # Handle text files
-                with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                    text_content = f.read()
-                
-                # Combine with prompt_text if provided
-                if prompt_text:
-                    full_prompt = f"{prompt_text}\n\nContent from {os.path.basename(file_path)}:\n{text_content}"
-                else:
-                    full_prompt = text_content
-                
-                return self.generate_text_content(full_prompt, model)
-            elif file_path.endswith((".png", ".jpg", ".jpeg", ".gif")):
-                # Handle images
-                image = Image.open(file_path)
-                
-                # Create model instance
-                model_client = genai.GenerativeModel(model)
-                
-                # Prepare contents
-                contents = []
-                if prompt_text:
-                    contents.append(prompt_text)
-                contents.append(image)
-                
-                # Generate content
-                response = model_client.generate_content(contents=contents)
-                
-                return response.text
-            elif file_path.endswith((".pdf")):
-                # Handle PDF files (simplified for now)
-                if prompt_text:
-                    logger.info(f"Processing PDF file with prompt: {prompt_text}")
-                else:
-                    logger.info("Processing PDF file with no additional prompt")
-                
-                # Implementation for PDF processing would go here
-                # For now, return a placeholder
-                return "PDF processing is not fully implemented yet."
+
+            # Process the response to extract the image
+            image_data = None
+            text_response = ""
+
+            for part in response.candidates[0].content.parts:
+                if part.text is not None:
+                    text_response += part.text
+                elif part.inline_data is not None:
+                    logger.debug("Found image data in response part")
+                    image_data = part.inline_data.data
+
+            if image_data:
+                return {
+                    'response': image_data,  # Return binary image data
+                    'text_response': text_response,  # Include any text response
+                    'model': model
+                }
             else:
-                # Unsupported file type
-                raise ValueError(f"Unsupported file type: {file_path}")
-        except Exception as e:
-            raise Exception(f"Error sending file prompt to Gemini model '{model}': {e}") from e
-    
-    def _send_prompt_with_image(self, image: Image.Image, model: str, prompt_text: Optional[str] = None) -> str:
-        """
-        Sends an image with optional text prompt to the Gemini model.
-        
-        Args:
-            image (Image.Image): The image to send.
-            model (str): The model to use.
-            prompt_text (str, optional): Optional text prompt to accompany the image.
-            
-        Returns:
-            str: The text response from the model.
-        """
-        try:
-            # Create model instance
-            model_client = genai.GenerativeModel(model)
-            
-            # Prepare contents
-            contents = []
-            if prompt_text:
-                contents.append(prompt_text)
-            contents.append(image)
-            
-            # Generate content
-            response = model_client.generate_content(contents=contents)
-            
-            return response.text
-        except Exception as e:
-            raise Exception(f"Error sending image prompt to Gemini model '{model}': {e}") from e
-    
-    def generate_audio_content(self, prompt_text: str, model: str) -> bytes:
-        """
-        Generate audio content from a text prompt (placeholder for future implementation).
-        
-        Args:
-            prompt_text (str): The text prompt.
-            model (str): The model to use.
-            
-        Returns:
-            bytes: The generated audio content.
-        """
-        # This is just a placeholder for now
-        logger.warning("Audio generation is not yet implemented")
-        raise NotImplementedError("Audio generation is not yet implemented")
-    
-    def generate_video_content(self, prompt_text: str, model: str) -> bytes:
-        """
-        Generate video content from a text prompt (placeholder for future implementation).
-        
-        Args:
-            prompt_text (str): The text prompt.
-            model (str): The model to use.
-            
-        Returns:
-            bytes: The generated video content.
-        """
-        # This is just a placeholder for now
-        logger.warning("Video generation is not yet implemented")
-        raise NotImplementedError("Video generation is not yet implemented")
+                logger.warning("No image data found in response parts")
+                return {
+                    'response': text_response.encode('utf-8') if text_response else b'',
+                    'model': model,
+                    'warning': "No image data found in response"
+                }
+
+        except Exception as gen_error:
+            logger.error(f"Error in image generation: {str(gen_error)}", exc_info=True)
+            error_message = f"Image generation error: {str(gen_error)}"
+            return {
+                'response': error_message.encode('utf-8'),
+                'model': model,
+                'error': str(gen_error)
+            }
+
+    def generate_audio_content(self, prompt, model, input_files, instructions=None):
+        pass
+
+    def generate_video_content(self, prompt, model, input_files, instructions=None):
+        pass
+
+    def delete_uploaded_files(self, file=None):
+        if file is None:
+            return
+        self.client.files.delete(name=file)
+
+    def uploaded_files(self):
+        for f in self.client.files.list():
+            print(' ', f.name)

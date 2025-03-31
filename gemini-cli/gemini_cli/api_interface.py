@@ -103,6 +103,7 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
                 prompt=prompt_text,
                 model=model_name,
                 input_files=input_files,
+                instructions=instructions,
             )
             return response.get('response', 'No response text found' if output_type == 'text' else b'')
         except Exception as e:
@@ -113,6 +114,7 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
                 prompt=prompt_text,
                 model=model_name,
                 input_files=input_files,
+                instructions=instructions,
             )
             return response
         except Exception as e:
@@ -123,6 +125,7 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
                 prompt=prompt_text,
                 model=model_name,
                 input_files=input_files,
+                instructions=instructions,
             )
             return response
         except Exception as e:
@@ -133,6 +136,7 @@ def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model
                 prompt=prompt_text,
                 model=model_name,
                 input_files=input_files,
+                instructions=instructions,
             )
             return response
         except Exception as e:

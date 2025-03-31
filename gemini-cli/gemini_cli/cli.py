@@ -45,8 +45,14 @@ MODEL_MAP = {
         "outputs": ["text"],
         "default_output": "text"
     },
+    "vision-latest": {  # Mapping 'vision' to flash as a capable multimodal model
+        "name": "gemini-2.5-pro-exp-03-25",
+        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+        "outputs": ["text"],
+        "default_output": "text"
+    },
     "vision": {  # Mapping 'vision' to flash as a capable multimodal model
-        "name": "gemini-1.5-flash-latest",
+        "name": "gemini-1.5-pro-latest",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
         "default_output": "text"
@@ -191,7 +197,7 @@ def main():
     # --- Process Instructions ---
     instructions_text = None
     if args.instructions:
-        if os.path.isfile(args.ins):
+        if os.path.isfile(args.instructions):
             logger.info(f"instructions argument '{args.instructions}' is a file path.")
             try:
                 validate_file_path(args.instructions)  # Basic validation
@@ -243,17 +249,17 @@ def main():
 
         logger.info(f"Requested output type: '{output_type}'")
         # --- API Interaction ---
-        generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text, output_path)
+        generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text, output_path, instructions_text)
 
     # Force a clean exit
     sys.exit(0)
 
 
-def generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text, output_path=None):
+def generate_content_and_save(args, model_alias, model_details, output_type, parser, prompt_text
+                              , output_path=None, instructions_text=None):
     model_name = model_details["name"]
 
     # Log the start of content generation
-    logger.info("")
     logger.info("=========================================")
     logger.info("Starting content generation...")
     logger.info(f"Using model: {model_name} (alias: '{model_alias}')")
@@ -265,9 +271,12 @@ def generate_content_and_save(args, model_alias, model_details, output_type, par
             file_filter=args.filter,
             output_type=output_type,  # Pass determined output type
             model_name=model_name,  # Pass actual model name
-            model_capabilities=model_details,  # Pass capabilities for potential use in api_interface
-            instructions=instructions_text
+            model_capabilities=model_details  # Pass capabilities for potential use in api_interface
         )
+
+        # --- New code to extract actual response ---
+        if isinstance(response_data, dict) and 'response' in response_data:
+            response_data = response_data['response']
 
         if response_data is None:
             logger.error("API interaction failed to return data.")
@@ -313,3 +322,4 @@ def generate_content_and_save(args, model_alias, model_details, output_type, par
 
 if __name__ == '__main__':
     main()
+

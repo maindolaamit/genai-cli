@@ -23,3 +23,6 @@ build/
 dist/
 *.egg-info/
 *.egg
+
+# Ignore .DS_Store files (macOS)
+.DS_Store

@@ -9,11 +9,11 @@ Gemini CLI is a command-line interface for interacting with the Gemini API. This
 - Provide text or file prompts for API interaction
 - Add optional instructions to guide the model's response
 - Process multiple file types including images, text, PDFs, audio, and video
-- Support for folder input with automatic file type detection
-- Size validation for uploaded files (limited to 20MB)
+- Support for folder input with automatic file type detection and filtering
+- Size validation for uploaded files (limited to 20MB, uses File API for larger files)
 - Save output to a specified file path, with auto-filename generation
-- Choose between text or image output types
-- Select different models for generating responses
+- Choose between text or image output types (more types planned)
+- Select different models for generating responses using aliases
 - Text output is always printed to console for convenience
 - Non-text outputs are automatically saved to files
 
@@ -24,7 +24,7 @@ To set up the project, follow these steps:
 1.  **Clone the Repository:** First, ensure you have `git` installed on your system. Then, open your terminal and run the following commands:
 
     ```bash
-    git clone https://github.com/yourusername/gemini-cli.git
+    git clone https://github.com/yourusername/gemini-cli.git # Replace with the actual repo URL if different
     cd genai-cli # Navigate into the main project directory
     ```
 
@@ -56,121 +56,103 @@ gemini-cli -p "Your text prompt here" -i "Additional instructions" -a "path/to/y
 
 -   `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
 -   `-i`, `--instructions`: Additional instructions to guide the model. This can also be a file path containing the instructions text.
--   `-a`, `--add`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
+-   `-a`, `--input`: Path to an input file or folder to add context. Supports various file formats.
 -   `-f`, `--filter`: Filter pattern for files when `-a` points to a folder (e.g., `"*.txt"`, `"*.jpg"`).
 -   `-o`, `--output`: Optional path where the output will be saved:
-     - If omitted: Text outputs are only displayed on screen, non-text outputs are saved with auto-generated filenames
-     - If `-o` with no value: Save with auto-generated filename
-     - If `-o folder_path/`: Save file with auto-generated name in the specified directory
-     - If `-o filename`: Save output to the specified filename
+     - If omitted for text output: Text is only displayed on the console.
+     - If omitted for non-text output: Saved with an auto-generated filename in the current directory.
+     - If `-o` with no value: Save with auto-generated filename in the current directory.
+     - If `-o folder_path/`: Save file with auto-generated name in the specified directory.
+     - If `-o filename`: Save output to the specified filename.
 -   `-t`, `--output-type`: Specify the output type (`text` or `image`). If omitted, it's inferred from the selected model's default.
--   `-m`, `--model`: Select the model alias to use for generating responses (e.g., "default", "flash", "pro", "vision", "imagen"). See `MODEL_MAP` in [`gemini-cli/gemini_cli/cli.py`](gemini-cli/gemini_cli/cli.py) for available aliases.
+-   `-m`, `--model`: Select the model alias(es) to use, comma-separated (e.g., "flash", "pro", "imagen"). See `MODEL_MAP` in [`gemini-cli/gemini_cli/cli.py`](gemini-cli/gemini_cli/cli.py) for available aliases. Default: "default".
 
 ### Supported File Formats
 
-The CLI supports the following file formats (defined in [`gemini-cli/gemini_cli/utils.py`](gemini-cli/gemini_cli/utils.py)):
+The CLI supports the following file formats for input (defined in [`gemini-cli/gemini_cli/utils.py`](gemini-cli/gemini_cli/utils.py)):
 
 -   **Images**: png, jpg, jpeg, gif
 -   **Text files**: txt, csv, json, xml, html, java, cpp, py
 -   **PDF files**: pdf
--   **Video files**: mp4, avi, mov (experimental)
--   **Audio files**: mp3, wav, flac (experimental)
+-   **Video files**: mp4, avi, mov (processed via File API)
+-   **Audio files**: mp3, wav, flac (processed via File API or inline)
 
-File size is limited to 20MB for all formats.
+File size is limited to 20MB for inline processing. Larger files are automatically handled using the Google AI File API.
 
 ### Use Cases
 
 -   Generate Text from a Prompt:
 
     ```bash
+    # Simple text prompt
     gemini-cli -p "What is the capital of France?"
-    gemini-cli -o "output.txt" -p "What is the capital of France?"
-    gemini-cli -o "output.txt" -t "text" -m "default" -p "What is the capital of France?"
-    gemini-cli -p "Explain quantum computing" -i "Keep it simple and use metaphors"
-    ```
 
-    **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
+    # Save text output to a specific file
+    gemini-cli -p "Explain quantum computing in simple terms." -o explanation.txt
+
+    # Use instructions from a file
+    gemini-cli -p "Summarize the main points of this article." -a ./resources/article.txt -i ./resources/instructions/out-md.txt -o summary.md
+    ```
 
 -   Generate Text from a Prompt File:
 
     ```bash
-    gemini-cli -p ./prompts/test.txt -o output.txt
-    gemini-cli -p ./resources/prompts/questions.txt -a ./resources/questions.txt 
+    # Use content of a file as the prompt
+    gemini-cli -p ./resources/prompts/questions.txt -a ./resources/questions.txt -o formatted_notes.txt
 
-    # Basic prompt with instructions
-    gemini-cli -p "Explain quantum computing" -i "Keep it simple and use metaphors"
-
-    # File input with instructions
-    gemini-cli -a ./resources/diagram.png -p "Explain this diagram" -i "Focus on the relationships between components"
-
-    # Instructions from a file
-    gemini-cli -p "Summarize this document" -a ./resources/report.pdf -i ./resources/instructions.txt
+    # Use a prompt file and provide instructions
+    gemini-cli -p ./resources/prompts/city.txt -i "Make the tone more optimistic." -o city_description.txt
     ```
-
-    This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
 
 -   Process Images with Prompts:
 
     ```bash
+    # Explain a diagram image
     gemini-cli -a ./resources/diagram.png -p "Explain this diagram in detail"
+
+    # Identify something in an image and save the analysis
     gemini-cli -a ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
-    gemini-cli -a ./resources -f "trx*.png" -p "summarize the transactions and return in md table" -o 
     ```
 
--   Analyze Text Files:
+-   Process Files in a Folder:
 
     ```bash
-    gemini-cli -a ./resources/questions.txt -p "Answer these questions"
+    # Summarize all PNG transaction images in a folder into a markdown table
+    gemini-cli -a ./resources -f "trx*.png" -p "Summarize the transactions and return in markdown table" -o hisaab_summary.md
+
+    # Describe all supported files in a folder
+    gemini-cli -a ./resources/ -p "Describe each file briefly." -o folder_description.txt
     ```
 
--   Process PDF Documents:
+-   Generate Images from Text:
 
     ```bash
-    # Assuming you have a PDF file at ./documents/report.pdf
-    gemini-cli -a ./documents/report.pdf -p "Summarize this report" -o "summary.txt"
-    ```
+    # Generate an image using the 'imagen' model alias
+    gemini-cli -p "Generate a photorealistic image of a futuristic city at sunset" -t image -m imagen -o generated-city.jpg
 
--   Process a Folder of Images:
-
-    ```bash
-    # Process all supported files in the resources folder
-    gemini-cli -a ./resources/ -p "Describe each image" -o "image-descriptions.txt"
-
-    # Process only PNG files in the resources folder
-    gemini-cli -a ./resources/ -f "*.png" -p "Describe each PNG image" -o "png-descriptions.txt"
-    ```
-
--   Generate Images from Text (using Imagen or Flash Image model):
-
-    ```bash
-    gemini-cli -p "Generate a photorealistic image of a futuristic city" -t image -m imagen -o generated-city.jpg
-    gemini-cli -p "A watercolor painting of a cat wearing a hat" -t image -m flash-img -o cat-painting.jpg
+    # Generate an image using the 'flash-img' model alias
+    gemini-cli -p "A watercolor painting of a cat wearing a tiny hat" -t image -m flash-img -o cat-painting.jpg
     ```
 
 -   Use Different Models:
 
     ```bash
-    gemini-cli -p "Write a technical analysis of quantum computing" -m pro -o "analysis.txt"
+    # Get a technical analysis using the 'pro' model
+    gemini-cli -p "Write a technical analysis of the Llama 3 architecture" -m pro -o "llama3_analysis.txt"
+
+    # Describe an image using the default 'vision' capable model
     gemini-cli -a ./resources/diagram.png -p "Describe this image" -m vision
     ```
 
--   Summarize transactions from images in a folder and output in Markdown table format:
+-   Compare Outputs from Multiple Models:
 
-    Command:
-    ````bash
-    # Assuming transaction images are named trx*.png in ./resources
-    gemini-cli -o hisaab.txt -f "trx*.png" -a ./resources  -p "summarize total transactions and return in md table format"
-    ````
-
-    Expected Output in `hisaab.txt`:
-    ````text
-    | Description | Amount |
-    |---|---|
-    | Sent Amount | $3739.73 |
-    | Received Amount | ₹333,580.18 |
-    | Exchange Rate | ₹89.20 |
-    | Coupon Savings | ₹7778.64 |
-    ````
+    ```bash
+    # Ask the same question to 'flash' and 'pro' models (outputs saved automatically)
+    gemini-cli -p "What are the key differences between Python 2 and Python 3?" -m flash,pro -o
+    # This will generate two files, e.g.:
+    # what-are-the_gemini-2_0-flash_20250331-110000.txt
+    # what-are-the_gemini-2_5-pro-exp-03-25_20250331-110001.txt
+    ```
 
 ## Testing
 
@@ -197,9 +179,7 @@ To run a specific test file:
 
 ```bash
 python3 -m unittest gemini-cli/tests/test_utils.py
-python3 -m unittest gemini-cli/tests/test_gemini_api.py
-python3 -m unittest gemini-cli/tests/test_cli.py
-python3 -m unittest gemini-cli/tests/test_api_interface.py
+# etc.
 ```
 
 ### Adding New Tests
