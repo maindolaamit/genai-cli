@@ -7,6 +7,7 @@ Gemini CLI is a command-line interface for interacting with the Gemini API. This
 ## Features
 
 - Provide text or file prompts for API interaction
+- Add optional instructions to guide the model's response
 - Process multiple file types including images, text, PDFs, audio, and video
 - Support for folder input with automatic file type detection
 - Size validation for uploaded files (limited to 20MB)
@@ -48,14 +49,15 @@ To set up the project, follow these steps:
 Once installed, you can use the `gemini-cli` command directly from your terminal:
 
 ```bash
-gemini-cli -p "Your text prompt here" -i "path/to/your/file_or_folder" -f "*.jpg" -o "path/to/output/file" -t "text|image" -m "model_alias"
+gemini-cli -p "Your text prompt here" -i "Additional instructions" -a "path/to/your/file_or_folder" -f "*.jpg" -o "path/to/output/file" -t "text|image" -m "model_alias"
 ```
 
 ### Command-Line Options
 
 -   `-p`, `--prompt`: Text prompt to send to the API. This can also be a file path containing the prompt text.
--   `-i`, `--input`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
--   `-f`, `--filter`: Filter pattern for files when `-i` points to a folder (e.g., `"*.txt"`, `"*.jpg"`).
+-   `-i`, `--instructions`: Additional instructions to guide the model. This can also be a file path containing the instructions text.
+-   `-a`, `--add`: Path to an input file or folder. Supports various file formats including images, PDFs, text files, audio, and video.
+-   `-f`, `--filter`: Filter pattern for files when `-a` points to a folder (e.g., `"*.txt"`, `"*.jpg"`).
 -   `-o`, `--output`: Optional path where the output will be saved:
      - If omitted: Text outputs are only displayed on screen, non-text outputs are saved with auto-generated filenames
      - If `-o` with no value: Save with auto-generated filename
@@ -84,6 +86,7 @@ File size is limited to 20MB for all formats.
     gemini-cli -p "What is the capital of France?"
     gemini-cli -o "output.txt" -p "What is the capital of France?"
     gemini-cli -o "output.txt" -t "text" -m "default" -p "What is the capital of France?"
+    gemini-cli -p "Explain quantum computing" -i "Keep it simple and use metaphors"
     ```
 
     **Note:** For long prompts, placing `-p` at the end of the command can improve readability and command parsing in some shells.
@@ -92,7 +95,16 @@ File size is limited to 20MB for all formats.
 
     ```bash
     gemini-cli -p ./prompts/test.txt -o output.txt
-    gemini-cli -p ./resources/prompts/questions.txt -i ./resources/questions.txt 
+    gemini-cli -p ./resources/prompts/questions.txt -a ./resources/questions.txt 
+
+    # Basic prompt with instructions
+    gemini-cli -p "Explain quantum computing" -i "Keep it simple and use metaphors"
+
+    # File input with instructions
+    gemini-cli -a ./resources/diagram.png -p "Explain this diagram" -i "Focus on the relationships between components"
+
+    # Instructions from a file
+    gemini-cli -p "Summarize this document" -a ./resources/report.pdf -i ./resources/instructions.txt
     ```
 
     This reads the contents of `./prompts/test.txt` file and uses it as the prompt.
@@ -100,32 +112,32 @@ File size is limited to 20MB for all formats.
 -   Process Images with Prompts:
 
     ```bash
-    gemini-cli -i ./resources/diagram.png -p "Explain this diagram in detail"
-    gemini-cli -i ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
-    gemini-cli -i ./resources -f "trx*.png" -p "summarize the transactions and return in md table" -o 
+    gemini-cli -a ./resources/diagram.png -p "Explain this diagram in detail"
+    gemini-cli -a ./resources/flower-with-bees.jpeg -p "Identify the species of bee in this image" -o "bee-analysis.txt"
+    gemini-cli -a ./resources -f "trx*.png" -p "summarize the transactions and return in md table" -o 
     ```
 
 -   Analyze Text Files:
 
     ```bash
-    gemini-cli -i ./resources/questions.txt -p "Answer these questions"
+    gemini-cli -a ./resources/questions.txt -p "Answer these questions"
     ```
 
 -   Process PDF Documents:
 
     ```bash
     # Assuming you have a PDF file at ./documents/report.pdf
-    gemini-cli -i ./documents/report.pdf -p "Summarize this report" -o "summary.txt"
+    gemini-cli -a ./documents/report.pdf -p "Summarize this report" -o "summary.txt"
     ```
 
 -   Process a Folder of Images:
 
     ```bash
     # Process all supported files in the resources folder
-    gemini-cli -i ./resources/ -p "Describe each image" -o "image-descriptions.txt"
+    gemini-cli -a ./resources/ -p "Describe each image" -o "image-descriptions.txt"
 
     # Process only PNG files in the resources folder
-    gemini-cli -i ./resources/ -f "*.png" -p "Describe each PNG image" -o "png-descriptions.txt"
+    gemini-cli -a ./resources/ -f "*.png" -p "Describe each PNG image" -o "png-descriptions.txt"
     ```
 
 -   Generate Images from Text (using Imagen or Flash Image model):
@@ -139,7 +151,7 @@ File size is limited to 20MB for all formats.
 
     ```bash
     gemini-cli -p "Write a technical analysis of quantum computing" -m pro -o "analysis.txt"
-    gemini-cli -i ./resources/diagram.png -p "Describe this image" -m vision
+    gemini-cli -a ./resources/diagram.png -p "Describe this image" -m vision
     ```
 
 -   Summarize transactions from images in a folder and output in Markdown table format:
@@ -147,7 +159,7 @@ File size is limited to 20MB for all formats.
     Command:
     ````bash
     # Assuming transaction images are named trx*.png in ./resources
-    gemini-cli -o hisaab.txt -f "trx*.png" -i ./resources  -p "summarize total transactions and return in md table format"
+    gemini-cli -o hisaab.txt -f "trx*.png" -a ./resources  -p "summarize total transactions and return in md table format"
     ````
 
     Expected Output in `hisaab.txt`:

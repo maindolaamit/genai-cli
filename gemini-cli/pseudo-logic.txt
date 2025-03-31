@@ -1,16 +1,19 @@
-gemini-cli -i ./resources/diagram.png -p "explain me this image"
+gemini-cli -a ./resources/diagram.png -p "explain me this image"
 
 The above command has below code flow:
 
 Parse the input parameters passed to the command (`argparse` in `cli.py`).
-Check if required parameters (`--prompt` or `--input`) are present.
+Check if required parameters (`--prompt` or `--add`) are present.
 
 A prompt (`-p`) can be a string or a path to a file.
 If it's a file path, read the content from the file (`read_file` in `utils.py`, called from `cli.py`).
 
-A filter (`-f`) is a string used to filter files when the input (`-i`) is a folder.
+Instructions (`-i`) work like prompts - can be a string or a path to a file.
+Instructions are optional and are appended to the prompt with a clear separator.
 
-Input (`-i`) can be a local file or a local folder.
+A filter (`-f`) is a string used to filter files when the input (`-a`) is a folder.
+
+Input (`-a`) can be a local file or a local folder.
 Supported input file formats and extensions are defined in `FILE_FORMATS` in `utils.py`.
     - image: png, jpg, jpeg, gif
     - text: txt, csv, json, xml, html, java, cpp, py
@@ -28,11 +31,10 @@ Input files have a size limit (`MAX_FILE_SIZE` in `utils.py`, currently 20MB).
         - Filter the collected files:
             - Determine file type (`get_file_type` in `utils.py`).
             - Check if the model supports the input file type (using `model_capabilities['inputs']`).
-            - Keep only supported files, up to `ALLOWED_FILE_COUNT`.
+            - Keep only supported files, up to `ALLOWED_FILE_COUNT` (default: 10).
             - Return a list of dictionaries `{'path': file_path, 'type': file_type}`.
 
 Output path (`-o`) is optional, with different behavior for text vs non-text outputs (handled in `cli.py`):
-    - `handle_output_path` function determines the final output path.
     - For text output:
         - Always printed to the console.
         - Only saved to file if `-o` is explicitly provided (path generated if needed).
@@ -41,7 +43,7 @@ Output path (`-o`) is optional, with different behavior for text vs non-text out
         - If `-o` is not provided or is a directory, generate a filename automatically:
           `<first-four-words-of-prompt-kebab-case>_<model_name>_<timestamp>.<extension>` (`generate_output_filename` in `cli.py`).
         - The extension depends on the `output_type` (e.g., `.jpg` for image).
-        - Directory creation handled by `handle_output_path` or `save_binary_output`.
+        - Directory creation handled by `save_binary_output` in `utils.py`.
 
 Output type (`-t`) is optional (handled in `cli.py`).
     - If `-t` is provided (e.g., `text`, `image`), validate if the selected model supports this output type (using `model_capabilities['outputs']`).
@@ -75,7 +77,8 @@ API Interaction (`interact_with_gemini_api` in `api_interface.py`):
     - Gets API key from environment.
     - Initializes `GeminiAPI` client (`gemini_api.py`).
     - Calls `get_input_files` to prepare the list of input files.
-    - Determines the API call based on `output_type`.
+    - Combines prompt and instructions if both are provided.
+    - Determines the API call based on `output_type` and available input files.
     - Calls the appropriate generation method on the `GeminiAPI` instance (e.g., `generate_text_content`, `generate_image_content`).
     - Returns the response data (text string or image bytes).
 
@@ -83,8 +86,7 @@ Gemini API Client (`GeminiAPI` in `gemini_api.py`):
     - Initializes the `google.generativeai` client.
     - Contains methods for different generation types:
         - `generate_text_content`:
-            - Prepares `contents` list (prompt + processed files).
-            - Uses `get_processed_file_content` helper to handle each file.
+            - Prepares `contents` list with the prompt text.
             - Calls `client.models.generate_content`.
             - Returns text response.
         - `generate_image_content`:
@@ -92,11 +94,17 @@ Gemini API Client (`GeminiAPI` in `gemini_api.py`):
             - Calls `client.models.generate_content` with image modality.
             - Extracts image data or text response/warning.
             - Returns binary image data or error/warning.
+        - `send_file_prompt`:
+            - Takes an optional `prompt_text` parameter.
+            - Handles different file types (text, image, PDF).
+            - For text files: combines file content with prompt if provided.
+            - For images: creates contents array with prompt (if provided) and image.
+            - Returns the model's response.
         - `generate_audio_content`, `generate_video_content` (placeholders).
     - `get_processed_file_content` helper:
         - Validates file path and size (`is_validate_file_size` from `utils.py`).
         - If file size exceeds limit, uploads using `client.files.upload`.
-        - Otherwise, processes based on type (using `process_image`, `process_pdf`, etc. from `utils.py`) and returns appropriate `types.Part` or text content.
+        - Otherwise, processes based on type (using `process_image`, `process_pdf`, etc. from `utils.py`) and returns appropriate content.
     - Includes methods for file management (`delete_uploaded_files`, `uploaded_files`).
 
 Output Handling (in `cli.py`):
@@ -143,10 +151,12 @@ This cli will allow me to quickly interact with gemini and view output or save t
 - generating code and save to a file
 
 Key behavior changes:
-- Text output is now always displayed in the console, making it more convenient for quick queries
+- Changed -i to -a for input files (add parameter)
+- Added -i for additional instructions to guide the model
+- Text output is always displayed in the console, making it more convenient for quick queries
 - Text output is only saved to a file when the -o flag is explicitly provided
 - Non-text outputs (images, etc.) continue to be saved automatically (with auto-generated filenames if needed)
-- Handles multiple input files from a folder (up to a limit).
+- Handles multiple input files from a folder (up to a limit, default 10).
 - Uses Google AI File API for files larger than `MAX_FILE_SIZE`.
 
 In future we will also be adding chat mode for the cli, so that user can chat with the model

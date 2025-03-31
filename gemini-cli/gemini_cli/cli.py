@@ -146,11 +146,12 @@ def main():
 
     # Prompt is now optional if input is provided
     parser.add_argument('-p', '--prompt', type=str, help='Text prompt or path to a file containing the prompt.')
-    parser.add_argument('-i', '--input', type=str, help='Path to an input file or folder.')
+    parser.add_argument('-i', '--instructions', type=str, help='Path to an input file or folder.')
+    parser.add_argument('-a', '--input', type=str, help='Add a path to file or folder to add to the API context.')
     parser.add_argument('-f', '--filter', type=str,
                         help='Filter pattern for files in a folder (e.g., "*.txt", "*.jpg").')
 
-    # Modified output argument to handle empty flag case
+    # Modified output argument to handle an empty flag case
     parser.add_argument('-o', '--output', nargs='?', const='', default=None,
                         help='Optional path to save the output file. If flag is present with no value, a filename is auto-generated.')
 
@@ -186,6 +187,22 @@ def main():
         else:
             prompt_text = args.prompt
             logger.info("Using provided text as prompt.")
+
+    # --- Process Instructions ---
+    instructions_text = None
+    if args.instructions:
+        if os.path.isfile(args.ins):
+            logger.info(f"instructions argument '{args.instructions}' is a file path.")
+            try:
+                validate_file_path(args.instructions)  # Basic validation
+                instructions_text = read_file(args.instructions)
+                logger.info(f"Using content from file '{args.instructions}' as prompt.")
+            except Exception as e:
+                logger.error(f"Error reading prompt file '{args.instructions}': {e}")
+                parser.exit(1)
+        else:
+            instructions_text = args.instructions
+            logger.info("Using provided text as instructions.")
 
     # --- Output Handling ---
     output_path = args.output
@@ -248,7 +265,8 @@ def generate_content_and_save(args, model_alias, model_details, output_type, par
             file_filter=args.filter,
             output_type=output_type,  # Pass determined output type
             model_name=model_name,  # Pass actual model name
-            model_capabilities=model_details  # Pass capabilities for potential use in api_interface
+            model_capabilities=model_details,  # Pass capabilities for potential use in api_interface
+            instructions=instructions_text
         )
 
         if response_data is None:

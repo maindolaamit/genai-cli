@@ -65,7 +65,7 @@ def get_input_files(input_path, file_filter, model_name, allowed_file_types):
     return processed_files[:ALLOWED_FILE_COUNT]
 
 
-def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model_name, model_capabilities):
+def interact_with_gemini_api(prompt, input_path, file_filter, output_type, model_name, model_capabilities, instructions=None):
     """
     Interact with the Gemini API based on the provided arguments.
 
