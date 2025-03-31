@@ -1,14 +1,13 @@
 import os
+import sys
 import unittest
 from unittest.mock import patch, Mock, mock_open
-import json
-import sys
-import tempfile
 
 # Add the src directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from gemini_api import GeminiAPI
+
 
 class TestGeminiAPI(unittest.TestCase):
     def setUp(self):
@@ -23,7 +22,7 @@ class TestGeminiAPI(unittest.TestCase):
         # Mock response for failed API calls (not directly used in google-genai, but keep for error test)
         self.mock_failed_response = Mock()
         self.mock_failed_response.status_code = 400
-        self.mock_failed_response.text = "Bad Request" # Not used with google-genai
+        self.mock_failed_response.text = "Bad Request"  # Not used with google-genai
 
     @patch('google.generativeai.GenerativeModel')
     def test_send_text_prompt_success(self, mock_generative_model):
@@ -37,7 +36,8 @@ class TestGeminiAPI(unittest.TestCase):
 
         # Verify the request was properly formatted
         mock_generative_model.assert_called_once_with('gemini-pro')
-        mock_generative_model.return_value.generate_content_and_save.assert_called_once_with("What is the capital of France?")
+        mock_generative_model.return_value.generate_content_and_save.assert_called_once_with(
+            "What is the capital of France?")
 
         # Verify response
         self.assertEqual(response, {"response": "This is a test response from Gemini API", 'model': 'gemini-pro'})
@@ -76,7 +76,8 @@ class TestGeminiAPI(unittest.TestCase):
             mock_generative_model.return_value.generate.assert_called_once()  # Called with image
 
             # Verify response
-            self.assertEqual(response, {"response": "This is a test response from Gemini API", 'model': 'gemini-pro-vision'})
+            self.assertEqual(response,
+                             {"response": "This is a test response from Gemini API", 'model': 'gemini-pro-vision'})
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('json.dump')
@@ -101,6 +102,7 @@ class TestGeminiAPI(unittest.TestCase):
         # Test retrieving default models
         models = self.gemini_api.get_default_models()
         self.assertEqual(models, ['gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro'])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,9 +10,11 @@ Gemini CLI is a command-line interface for interacting with the Gemini API. This
 - Process multiple file types including images, text, PDFs, audio, and video
 - Support for folder input with automatic file type detection
 - Size validation for uploaded files (limited to 20MB)
-- Save output to a specified file path
+- Save output to a specified file path, with auto-filename generation
 - Choose between text or image output types
 - Select different models for generating responses
+- Text output is always printed to console for convenience
+- Non-text outputs are automatically saved to files
 
 ## Installation
 
