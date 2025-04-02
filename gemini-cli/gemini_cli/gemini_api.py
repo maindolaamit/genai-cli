@@ -90,7 +90,7 @@ class GeminiAPI:
         config = GenerateContentConfig()
         # loop for files and add to contents
         for file in input_files:
-            logger.info(f"Processing input: {file}")
+            logger.info(f"Adding input: {file}")
             contents.append(get_processed_file_content(file["path"], file["type"], self.client))
 
         if instructions:
@@ -114,7 +114,8 @@ class GeminiAPI:
         contents = [prompt]
         # loop for files and add to contents
         for file in input_files:
-            contents.append(get_processed_file_content(file.path, file.type))
+            logger.info(f"Adding input: {file}")
+            contents.append(get_processed_file_content(file["path"], file["type"], self.client))
 
         config = GenerateContentConfig()
         config.response_modalities = ['Text', 'Image']

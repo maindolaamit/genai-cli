@@ -51,6 +51,12 @@ MODEL_MAP = {
         "outputs": ["text"],
         "default_output": "text"
     },
+    "gemma": {  
+        "name": "gemma-3-12b-it",
+        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+        "outputs": ["text"],
+        "default_output": "text"
+    },
     "vision": {  # Mapping 'vision' to flash as a capable multimodal model
         "name": "gemini-1.5-pro-latest",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
@@ -59,13 +65,13 @@ MODEL_MAP = {
     },
     "imagen": {
         "name": "imagen-3.0-generate-002",  # Example name, verify actual latest Imagen model
-        "inputs": ["text"],
+        "inputs": ["text", "image"],
         "outputs": ["image"],
         "default_output": "image"
     },
     "flash-img": {
         "name": "gemini-2.0-flash-exp-image-generation",  # Example name, verify actual latest Imagen model
-        "inputs": ["text"],
+        "inputs": ["text", "image"],
         "outputs": ["image"],
         "default_output": "image"
     },
@@ -147,6 +153,18 @@ def handle_output_path(output_path, model_name=None, prompt_text=None, output_ty
     return output_path
 
 
+def list_models():
+    """Prints the available models and their details."""
+    print("Available models:")
+    for alias, details in MODEL_MAP.items():
+        print(f"Alias: {alias}")
+        print(f"  Name: {details['name']}")
+        print(f"  Inputs: {', '.join(details['inputs'])}")
+        print(f"  Outputs: {', '.join(details['outputs'])}")
+        print(f"  Default Output: {details['default_output']}")
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Interact with the Gemini API.')
 
@@ -168,7 +186,13 @@ def main():
     parser.add_argument('-m', '--model', type=str, default=DEFAULT_MODEL_ALIAS,
                         help=f'Model alias to use (default: "{DEFAULT_MODEL_ALIAS}"). Choices: {", ".join(MODEL_MAP.keys())}')
 
+    parser.add_argument('--list-models', action='store_true', help='List available models and their details.')
+
     args = parser.parse_args()
+
+    if args.list_models:
+        list_models()
+        sys.exit(0)
 
     if not args.prompt and not args.input:
         logger.error('At least one of --prompt or --input must be provided.')
@@ -230,12 +254,13 @@ def main():
     # check if all aliases are valid
     for model_alias in model_aliases:
         model_details = MODEL_MAP.get(model_alias)
-        model_name = model_details["name"]
 
         if not model_details:
             logger.error(
                 f"Model alias '{model_alias}' not recognized. Valid aliases are: {', '.join(MODEL_MAP.keys())}")
             parser.exit(1)
+
+        model_name = model_details["name"]
 
         if output_type is None:
             output_type = model_details["default_output"]

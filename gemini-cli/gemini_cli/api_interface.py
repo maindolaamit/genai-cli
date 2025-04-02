@@ -59,6 +59,9 @@ def get_input_files(input_path, file_filter, model_name, allowed_file_types):
             elif file_type:
                 logger.warning(
                     f"Skipping file {file_path}: type '{file_type}' not supported by model '{model_name}'")
+            else:
+                logger.error(f"Skipping file {file_path}: type could not be determined")
+
         except Exception as e:
             logger.warning(f"Error processing file {file_path}: {e}")
 
