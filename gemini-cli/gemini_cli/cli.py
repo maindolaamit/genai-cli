@@ -4,6 +4,7 @@ import os
 import re
 import signal
 import sys
+import subprocess # Import subprocess
 
 from .api_interface import interact_with_gemini_api
 from .utils import setup_logger, read_file, validate_file_path  # Removed get_file_extension_from_mime
@@ -333,6 +334,16 @@ def generate_content_and_save(args, model_alias, model_details, output_type, par
                 with open(output_path, 'wb') as f:
                     f.write(response_data)
                 logger.info(f"Output successfully saved to {output_path}")
+
+                # Check for imgcat and display image in terminal if available and output is image
+                if output_type == 'image':
+                    if subprocess.run(["which", "imgcat"], capture_output=True, check=False).returncode == 0:
+                        logger.info(f"Displaying image using imgcat: {output_path}")
+                        os.system(f"imgcat -W 300px -H 200px {output_path}")
+                    else:
+                        logger.info("imgcat not found, image saved but not displayed in terminal.")
+
+
             except IOError as e:
                 logger.error(f"Failed to write output to {output_path}: {e}")
                 sys.exit(1)
