@@ -5,14 +5,27 @@ import pathlib
 # File formats supported by the CLI
 FILE_FORMATS = {
     "image": ["png", "jpg", "jpeg", "gif"],
-    "text": ["txt", "csv", "json", "xml", "html", "java", "cpp", "py"],
+    "text": ["txt", "csv", ".tsv", "json", "xml", "html", "css", "md", "java", "cpp", "py", "rft", "sql", "yaml", "yml"],
     "pdf": ["pdf"],
+    "doc": [".doc", "docx", ".pptx", ".ppt",".xls", "xlsx"],
     "video": ["mp4", "avi", "mov"],
     "audio": ["mp3", "wav", "flac"]
 }
 
 # Maximum file size in MB
 MAX_FILE_SIZE = 20  # MB
+
+# Add a dictionary for common document MIME types
+DOC_MIME_TYPES = {
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.odt': 'application/vnd.oasis.opendocument.text', # Added ODT as an example
+    # Add other document types as needed
+}
 
 
 def read_file(file_path):
@@ -53,6 +66,44 @@ def process_image(image_path):
     validate_file_size(image_path)
     # Open and process the image
     return Image.open(image_path)
+
+
+def process_doc(file_path):
+    """
+    Reads a document file and determines its MIME type.
+
+    Args:
+        file_path (str): Path to the document file.
+
+    Returns:
+        tuple: (bytes, str) - The file content as bytes and the determined MIME type.
+               Returns (None, None) if MIME type cannot be determined.
+    """
+    logger = setup_logger("utils")
+    try:
+        # Read the file content as bytes
+        with open(file_path, 'rb') as f:
+            doc_data = f.read()
+
+        # Determine MIME type from extension
+        _, ext = os.path.splitext(file_path)
+        mime_type = DOC_MIME_TYPES.get(ext.lower())
+
+        if not mime_type:
+            logger.warning(f"Could not determine MIME type for document extension: {ext}")
+            # Default or raise error? For now, returning None.
+            # Consider a default like 'application/octet-stream' if needed.
+            return doc_data, None # Or raise ValueError
+
+        logger.info(f"Processed document '{os.path.basename(file_path)}' with MIME type: {mime_type}")
+        return doc_data, mime_type
+
+    except FileNotFoundError:
+        logger.error(f"Document file not found: {file_path}")
+        raise
+    except Exception as e:
+        logger.error(f"Error processing document file {file_path}: {e}")
+        raise
 
 
 def process_pdf(pdf_path):

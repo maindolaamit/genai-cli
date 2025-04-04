@@ -1,10 +1,11 @@
 import json
+import os
 
 from google import genai
 from google.genai import types
 from google.genai.types import GenerateContentConfig
 
-from .utils import process_image, setup_logger, \
+from .utils import process_doc, process_image, setup_logger, \
     is_validate_file_size, process_pdf, process_audio, read_file, \
     validate_file_path  # Changed import to relative
 
@@ -40,6 +41,15 @@ def get_processed_file_content(file_path, file_type, client):
             data=pdf_data,
             mime_type='application/pdf',
         )
+    elif file_type == 'doc':
+        doc_data, mime_type = process_doc(file_path)  # Now returns data and mime_type
+        if doc_data and mime_type:
+            logger.info(f"Processed document file: {os.path.basename(file_path)} with MIME type {mime_type}")
+            return types.Part.from_data(data=doc_data, mime_type=mime_type)
+        else:
+            # Handle case where mime_type couldn't be determined or data is None
+            logger.error(f"Could not process document file properly: {file_path}")
+            raise ValueError(f"Failed to process document file {file_path}")
     elif file_type == 'text':
         return read_file(file_path)
     elif file_type == 'audio':

@@ -117,6 +117,8 @@ def generate_output_filename(model_name, prompt_text, output_type, output_dir=No
         extension = "mp3"
     elif output_type == 'video':
         extension = "mp4"
+    elif output_type == 'doc':
+        extension = "docx"
 
     # Sanitize model name for filename
     safe_model_name = model_name.replace('/', '_').replace('.', '_')
