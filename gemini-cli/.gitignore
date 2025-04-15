@@ -40,3 +40,9 @@ Thumbs.db
 *.key
 api_credentials.json
 config.local.yaml
+
+# Mac OS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db

@@ -5,7 +5,7 @@ import pathlib
 # File formats supported by the CLI
 FILE_FORMATS = {
     "image": ["png", "jpg", "jpeg", "gif"],
-    "text": ["txt", "csv", ".tsv", "json", "xml", "html", "css", "md", "java", "cpp", "py", "rft", "sql", "yaml", "yml"],
+    "text": ["txt", "csv", ".tsv", "json", "xml", "html", "css", "md", "mdx", "java", "cpp", "py", "rft", "sql", "yaml", "yml"],
     "pdf": ["pdf"],
     "doc": [".doc", "docx", ".pptx", ".ppt",".xls", "xlsx"],
     "video": ["mp4", "avi", "mov"],
