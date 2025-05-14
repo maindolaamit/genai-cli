@@ -1,0 +1,37 @@
+gemini-cli -p ./prompts/question.txt -i ./resources/questions.txt
+2025-03-28 02:20:28 - gemini_cli - INFO - Using model: gemini-1.5-flash-latest (alias: 'default') (cli.py:152)
+2025-03-28 02:20:28 - gemini_cli - INFO - Output type not specified, defaulting to model's default: 'text' (cli.py:158)
+2025-03-28 02:20:28 - gemini_cli - INFO - Prompt argument './prompts/question.txt' is a file path. (cli.py:170)
+2025-03-28 02:20:28 - gemini_cli - INFO - Using content from file './prompts/question.txt' as prompt. (cli.py:174)
+2025-03-28 02:20:28 - api_interface - INFO - Input path provided: ./resources/questions.txt (api_interface.py:128)
+2025-03-28 02:20:28 - api_interface - INFO - Input path is a file: ./resources/questions.txt (api_interface.py:174)
+2025-03-28 02:20:28 - api_interface - INFO - File type detected: text (api_interface.py:183)
+2025-03-28 02:20:28 - api_interface - INFO - Sending file prompt for text generation: ./resources/questions.txt (api_interface.py:186)
+2025-03-28 02:20:28 - gemini_cli - ERROR - An error occurred during API interaction or processing: Error processing input file: Error sending file prompt to Gemini model 'gemini-1.5-flash-latest': cannot identify image file './resources/questions.txt' (cli.py:281)
+Traceback (most recent call last):
+  File "/Users/l9w9/github/genai-cli/gemini-cli/gemini_cli/gemini_api.py", line 103, in send_file_prompt
+    image = Image.open(file_path)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/l9w9/.local/share/mise/installs/python/3.11.11/lib/python3.11/site-packages/PIL/Image.py", line 3532, in open
+    raise UnidentifiedImageError(msg)
+PIL.UnidentifiedImageError: cannot identify image file './resources/questions.txt'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/l9w9/github/genai-cli/gemini-cli/gemini_cli/api_interface.py", line 187, in interact_with_gemini_api
+    response = gemini_api.send_file_prompt(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/l9w9/github/genai-cli/gemini-cli/gemini_cli/gemini_api.py", line 191, in send_file_prompt
+    raise Exception(f"Error sending file prompt to Gemini model '{model}': {e}") from e
+Exception: Error sending file prompt to Gemini model 'gemini-1.5-flash-latest': cannot identify image file './resources/questions.txt'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/l9w9/github/genai-cli/gemini-cli/gemini_cli/cli.py", line 185, in main
+    response_data = interact_with_gemini_api(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/l9w9/github/genai-cli/gemini-cli/gemini_cli/api_interface.py", line 197, in interact_with_gemini_api
+    raise Exception(f"Error processing input file: {e}") from e
+Exception: Error processing input file: Error sending file prompt to Gemini model 'gemini-1.5-flash-latest': cannot identify image file './resources/questions.txt'

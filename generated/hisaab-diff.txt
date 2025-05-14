@@ -1,0 +1,17 @@
+The image shows details of a money transfer transaction.  Here's a breakdown of the information:
+
+* **Transaction ID:** A unique identifier for this specific transfer (fef1dfc4-847e-4404-9c05-b00bea7e8f35).
+* **Sender:**  Sending from a US Bank account (Account number partially obscured: -0269).
+* **Receiver:** Ramesh, with an ICICI bank account in India (Account number partially obscured: ICICI-9220).
+* **Sent Amount:** $3739.73 USD.
+* **Received Amount:** ₹333,580.18 INR.
+* **Exchange Rate:** ₹89.20 per 1 USD.
+* **Coupon Savings:** ₹7778.64 INR.
+* **Transaction Status:**
+    * Initiated on March 12, 2025, at 10:09 PM.
+    * US Bank account debit is in progress.
+    * Recipient account validation is in progress.
+    * Estimated completion time: March 15, 2025, at 01:00 PM.
+
+
+Essentially, the image captures a snapshot of an ongoing international money transfer, showing the key details of the sender, receiver, amounts, and the current stage of the transaction.

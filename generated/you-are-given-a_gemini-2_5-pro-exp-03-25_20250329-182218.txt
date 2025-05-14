@@ -1,0 +1,16 @@
+Okay, here is the text formatted into a structured note-taking format with questions as headers and answers as paragraphs:
+
+## What is the capital of France?
+Paris
+
+## What is the largest planet in our solar system?
+Jupiter
+
+## Who wrote 'Romeo and Juliet'?
+William Shakespeare
+
+## What is the chemical symbol for gold?
+Au
+
+## Who painted the Mona Lisa?
+Leonardo da Vinci

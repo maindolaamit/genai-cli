@@ -1,0 +1,83 @@
+# Installing and Starting with Go on macOS
+
+Here's how to install Go and get started with your first program on macOS:
+
+**1. Download the Go Distribution:**
+
+* Open your web browser and go to the official Go download page: [https://go.dev/dl/](https://go.dev/dl/)
+* Download the macOS package (likely a `.pkg` file).  Choose the appropriate version for your system (e.g., ARM64 for Apple Silicon, amd64 for Intel).
+
+**2. Install Go:**
+
+* Double-click the downloaded `.pkg` file.
+* Follow the on-screen instructions to install Go.  The installer will typically place Go in `/usr/local/go`.
+
+**3. Verify the Installation:**
+
+* Open your terminal application (usually found in `/Applications/Utilities/Terminal`).
+* Type `go version` and press Enter.  You should see the installed Go version printed to the console.  If you get an error, double-check that the installation completed successfully.
+
+
+**4. Set up your GOPATH (Optional but Recommended):**
+
+While not strictly required for simple programs, setting a `GOPATH` is best practice for larger projects.  `GOPATH` specifies where your Go workspace will reside (where your source code, packages, and binaries will be stored).
+
+* **Create a workspace directory:**  Choose a location, for example, `~/go`. Create this directory in your terminal using:
+  ```bash
+  mkdir -p ~/go/src
+  mkdir -p ~/go/bin
+  mkdir -p ~/go/pkg
+  ```
+
+* **Set the GOPATH environment variable:** You can do this temporarily for the current terminal session or permanently by adding it to your shell configuration file (e.g., `~/.zshrc`, `~/.bashrc`, `~/.bash_profile`).  Choose one of the methods below:
+
+    * **Temporarily (for current session):**
+      ```bash
+      export GOPATH=~/go
+      ```
+
+    * **Permanently (add to your shell config file):** Open your shell configuration file (using a text editor like nano or vim), add the `export GOPATH=~/go` line, and save the file. Then, source the file to apply the changes:
+      ```bash
+      source ~/.zshrc  # Or ~/.bashrc, ~/.bash_profile, depending on your shell
+      ```
+
+**5. Create your first Go program:**
+
+* Create a new file named `hello.go` in your `~/go/src` directory (or wherever you choose to keep your source code within your `GOPATH`).  You can use any text editor (like VS Code, Sublime Text, Atom, or even the terminal's `nano` or `vim`).
+
+* Add the following code to `hello.go`:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("Hello, World!")
+}
+```
+
+**6. Run your Go program:**
+
+* Navigate to the directory containing `hello.go` in your terminal:
+  ```bash
+  cd ~/go/src
+  ```
+
+* Compile and run your program:
+  ```bash
+  go run hello.go
+  ```
+
+You should see "Hello, World!" printed to your console.
+
+
+**7. (Optional) Using an IDE:**
+
+Consider using an IDE (Integrated Development Environment) for a better coding experience. Popular choices include:
+
+* **GoLand (JetBrains):** A powerful and feature-rich IDE specifically designed for Go. (Paid)
+* **VS Code:** A versatile and customizable code editor with excellent Go support through extensions. (Free)
+
+
+These steps will get you up and running with Go on your macOS system. Remember to consult the official Go documentation ([https://go.dev/doc/](https://go.dev/doc/)) for more detailed information and advanced topics.

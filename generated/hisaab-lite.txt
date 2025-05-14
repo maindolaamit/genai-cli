@@ -1,0 +1,15 @@
+Here's a summary of the transaction in a Markdown table:
+
+| Detail             | Value                |
+| ------------------ | -------------------- |
+| Transaction ID     | fef1dfc4-847e...      |
+| Sending From       | Acc - 0269           |
+| Sending Currency   | USD                  |
+| Sending Amount     | $3739.73             |
+| Receiving Account  | Ramesh ICICI-9220    |
+| Receiving Currency | INR                  |
+| Receiving Amount   | ₹ 333,580.18       |
+| Exchange Rate      | ₹ 89.20             |
+| Coupon Savings     | ₹ 7778.64           |
+| Transaction Status | In progress         |
+| Estimated Time     | 15 Mar 2025 01:00 PM |

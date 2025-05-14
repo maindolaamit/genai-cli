@@ -1,0 +1,9 @@
+Here's a summary of the transactions in a markdown table:
+
+| Transaction Date | Amount in INR | Amount in USD | Total INR |
+|---|---|---|---|
+| 12 Mar 2025 | ₹ 333,580.18 | $3739.73 | ₹ 333,669.18 |
+| 14 Mar 2025 | ₹ 250,000.00 | $2802.72 | ₹ 250,721.02 |
+
+
+**Note:**  The "Total INR" column adds the coupon savings to the received amount.  The exchange rate is not included in the total as it's a conversion factor, not an additional fee or saving.

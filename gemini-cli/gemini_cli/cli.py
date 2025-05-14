@@ -339,11 +339,16 @@ def generate_content_and_save(args, model_alias, model_details, output_type, par
 
                 # Check for imgcat and display image in terminal if available and output is image
                 if output_type == 'image':
-                    if subprocess.run(["which", "imgcat"], capture_output=True, check=False).returncode == 0:
+                    # Check for viu first
+                    if subprocess.run(["which", "viu"], capture_output=True, check=False).returncode == 0:
+                        logger.info(f"Displaying image using viu: {output_path}")
+                        os.system(f"viu -w 40 -h 20 {output_path}")
+                    # Fallback to imgcat if viu is not found
+                    elif subprocess.run(["which", "imgcat"], capture_output=True, check=False).returncode == 0:
                         logger.info(f"Displaying image using imgcat: {output_path}")
                         os.system(f"imgcat -W 300px -H 200px {output_path}")
                     else:
-                        logger.info("imgcat not found, image saved but not displayed in terminal.")
+                        logger.info("Neither viu nor imgcat found, image saved but not displayed in terminal.")
 
 
             except IOError as e:

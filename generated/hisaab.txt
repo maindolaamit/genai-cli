@@ -1,0 +1,10 @@
+Here's a summary of the transactions in a markdown table:
+
+| Trx Date       | Amount (INR)     | Amount (USD)    |
+|-----------------|--------------------|-----------------|
+| 12 Mar 2025     | ₹ 333,580.18      | $3739.73        |
+| 14 Mar 2025     | ₹ 250,000.00      | $2802.72        |
+| **Total**       | **₹ 583,580.18** | **$6542.45**   |
+
+
+**Note:**  The exchange rate and coupon savings are not included in the total amounts as they represent adjustments rather than direct transaction values.

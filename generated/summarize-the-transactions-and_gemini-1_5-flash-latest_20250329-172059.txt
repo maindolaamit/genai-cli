@@ -1,0 +1,9 @@
+Here's a summary of the transactions in a markdown table:
+
+| Transaction ID             | Sending From (Acc) | Sent Amount (USD) | Receiving To (Acc) | Received Amount (INR) | Exchange Rate (INR/USD) | Coupon Savings (INR) | Transaction Initiated          | Estimated Completion Time     |
+|-----------------------------|----------------------|--------------------|-----------------------|-----------------------|-------------------------|----------------------|-------------------------------|-------------------------------|
+| `fef1dfc4-847e-4404-9c05-b00bea7e8f35` | US Bank - 0269       | $3739.73            | Ramesh ICICI-9220     | ₹ 333,580.18           | ₹ 89.20                   | ₹ 7778.64             | 12 Mar 2025 10:09 PM         | 15 Mar 2025 01:00 PM         |
+| `dede675c-add2-4bf8-a839-7174e3020ad3` | US Bank - 0269       | $2802.72            | Ramesh ICICI-9220     | ₹ 250,000.00           | ₹ 89.20                   | ₹ 7231.02             | 14 Mar 2025 10:41 PM         | 17 Mar 2025 04:00 PM         |
+
+
+**Note:**  The exchange rate shown in the screenshots seems to be a displayed value, not necessarily the exact rate used in the calculation.  The actual exchange rate applied might differ slightly, resulting in the final received amount.

@@ -1,0 +1,9 @@
+Here's a summary of the transactions in a markdown table:
+
+| Transaction Date | Amount in INR | Amount in USD | Total in INR (including fees/savings)|
+|---|---|---|---|
+| 12 Mar 2025 | ₹ 333,580.18 | $3739.73 | ₹ 333,580.18 + ₹ 7778.64 - ₹89.20 = ₹ 340,269.58 |
+| 14 Mar 2025 | ₹ 250,000.00 | $2802.72 | ₹ 250,000.00 + ₹ 7231.02 - ₹ 89.20 = ₹ 257,141.82 |
+
+
+**Note:**  The "Total in INR" column includes the exchange rate and coupon savings as shown in the images.  The calculations shown assume that coupon savings are added to the received amount and the exchange rate fees are subtracted.  The exact nature of the exchange rate fees is not clear from the image provided, hence the assumption.
