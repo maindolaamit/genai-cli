@@ -29,7 +29,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 # Output types: 'text', 'image'
 MODEL_MAP = {
     "flash": {
-        "name": "gemini-2.0-flash",
+        "name": "gemini-2.5-flash-preview-05-20",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
         "default_output": "text"
@@ -41,37 +41,37 @@ MODEL_MAP = {
         "default_output": "text"
     },
     "pro": {
-        "name": "gemini-2.5-pro-exp-03-25",
+        "name": "gemini-2.5-pro-preview-05-06",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
         "default_output": "text"
     },
-    "vision-latest": {  # Mapping 'vision' to flash as a capable multimodal model
-        "name": "gemini-2.5-pro-exp-03-25",
-        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
-        "outputs": ["text"],
-        "default_output": "text"
-    },
-    "gemma": {  
-        "name": "gemma-3-12b-it",
-        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
-        "outputs": ["text"],
-        "default_output": "text"
-    },
-    "vision": {  # Mapping 'vision' to flash as a capable multimodal model
-        "name": "gemini-1.5-pro-latest",
-        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
-        "outputs": ["text"],
+    # "vision-latest": {  # Mapping 'vision' to flash as a capable multimodal model
+    #     "name": "gemini-2.5-pro-preview-05-06",
+    #     "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+    #     "outputs": ["text"],
+    #     "default_output": "text"
+    # },
+    # "gemma": {  
+    #     "name": "gemma-3-12b-it",
+    #     "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+    #     "outputs": ["text"],
+    #     "default_output": "text"
+    # },
+    "veo": {  # Mapping 'vision' to flash as a capable multimodal model
+        "name": "veo-2.0-generate-001",
+        "inputs": ["text", "image" ],
+        "outputs": ["video"],
         "default_output": "text"
     },
     "imagen": {
-        "name": "imagen-3.0-generate-002",  # Example name, verify actual latest Imagen model
+        "name": "imagen-4-0-generate-preview-05-20",  # Example name, verify actual latest Imagen model
         "inputs": ["text", "image"],
         "outputs": ["image"],
         "default_output": "image"
     },
     "flash-img": {
-        "name": "gemini-2.0-flash-exp-image-generation",  # Example name, verify actual latest Imagen model
+        "name": "gemini-2.0-flash-preview-image-generation",  # Example name, verify actual latest Imagen model
         "inputs": ["text", "image"],
         "outputs": ["image"],
         "default_output": "image"

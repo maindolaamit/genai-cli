@@ -123,9 +123,9 @@ class GeminiAPI:
         # Assuming input_files is a list of file paths
         contents = [prompt]
         # loop for files and add to contents
-        for file in input_files:
-            logger.info(f"Adding input: {file}")
-            contents.append(get_processed_file_content(file["path"], file["type"], self.client))
+        for file_info in input_files: # Renamed 'file' to 'file_info' for clarity
+            logger.info(f"Adding input: {file_info}")
+            contents.append(get_processed_file_content(file_info["path"], file_info["type"], self.client))
 
         config = GenerateContentConfig()
         config.response_modalities = ['Text', 'Image']
@@ -138,12 +138,12 @@ class GeminiAPI:
 
         try:
             # Import the types module for configuration
-            from google.genai import types
+            # from google.genai import types # This can be at the top of the file or class
 
             # Generate image content
             response = self.client.models.generate_content(
                 model=model,
-                contents=prompt,
+                contents=contents,  # <<< CORRECTED: Was 'prompt', should be the 'contents' list
                 config=config
             )
 
@@ -184,8 +184,86 @@ class GeminiAPI:
     def generate_audio_content(self, prompt, model, input_files, instructions=None):
         pass
 
-    def generate_video_content(self, prompt, model, input_files, instructions=None):
-        pass
+    def generate_video_content(self, prompt, model, input_files=None, instructions=None, aspect_ratio="16:9", output_gcs=None, duration_seconds=5, person_generation="allow_adult", enhance_prompt=True, number_of_videos=1):
+        """
+        Generate a video using the Veo model.
+        Args:
+            prompt (str): Text prompt for the video.
+            model (str): Model name (e.g., "veo-2.0-generate-001").
+            input_files (list): Optional, for image input (GCS URI).
+            instructions (str): Optional system instructions.
+            aspect_ratio (str): "16:9" or "9:16".
+            output_gcs (str): GCS URI for output video.
+            duration_seconds (int): Duration of the video.
+            person_generation (str): "allow_adult" or "dont_allow".
+            enhance_prompt (bool): Whether to enhance the prompt.
+            number_of_videos (int): Number of videos to generate.
+        Returns:
+            dict: Response with video URI or error.
+        """
+        from google.genai import types
+        import time
+
+        # If input_files is provided and is an image, use it as the image input
+        image_part = None
+        if input_files and len(input_files) > 0:
+            image_file = input_files[0]
+            # Assume input_files[0] is a dict with "gcs_uri" and "type"
+            if image_file.get("type") == "image" and image_file.get("gcs_uri"):
+                image_part = types.Image(
+                    gcs_uri=image_file["gcs_uri"],
+                    mime_type="image/png"
+                )
+
+        # Build config
+        video_config = types.GenerateVideosConfig(
+            aspect_ratio=aspect_ratio,
+            output_gcs_uri=output_gcs,
+            number_of_videos=number_of_videos,
+            duration_seconds=duration_seconds,
+            person_generation=person_generation,
+            enhance_prompt=enhance_prompt,
+        )
+
+        # Prepare the operation call
+        try:
+            if image_part:
+                operation = self.client.models.generate_videos(
+                    model=model,
+                    image=image_part,
+                    config=video_config
+                )
+            else:
+                operation = self.client.models.generate_videos(
+                    model=model,
+                    prompt=prompt,
+                    config=video_config
+                )
+
+            # Wait for operation to complete
+            while not operation.done:
+                time.sleep(15)
+                operation = self.client.operations.get(operation)
+
+            # Extract video URI(s)
+            if operation.response:
+                video_uris = [v.video.uri for v in operation.result.generated_videos]
+                return {
+                    "video_uris": video_uris,
+                    "model": model,
+                    "prompt": prompt
+                }
+            else:
+                return {
+                    "error": "No video generated",
+                    "model": model
+                }
+        except Exception as e:
+            logger.error(f"Video generation error: {e}", exc_info=True)
+            return {
+                "error": str(e),
+                "model": model
+            }
 
     def delete_uploaded_files(self, file=None):
         if file is None:

@@ -4,3 +4,4 @@ httpx
 argparse
 python-dotenv
 google-genai
+mediapy
