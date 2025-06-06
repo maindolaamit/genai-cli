@@ -41,7 +41,7 @@ MODEL_MAP = {
         "default_output": "text"
     },
     "pro": {
-        "name": "gemini-2.5-pro-preview-05-06",
+        "name": "gemini-1.5-pro",
         "inputs": ["text", "image", "audio", "video", "pdf", "file"],
         "outputs": ["text"],
         "default_output": "text"
@@ -52,12 +52,12 @@ MODEL_MAP = {
     #     "outputs": ["text"],
     #     "default_output": "text"
     # },
-    # "gemma": {  
-    #     "name": "gemma-3-12b-it",
-    #     "inputs": ["text", "image", "audio", "video", "pdf", "file"],
-    #     "outputs": ["text"],
-    #     "default_output": "text"
-    # },
+    "audio": {  
+        "name": "gemini-2.5-flash-preview-native-audio-dialog",
+        "inputs": ["text", "image", "audio", "video", "pdf", "file"],
+        "outputs": ["text"],
+        "default_output": "text"
+    },
     "veo": {  # Mapping 'vision' to flash as a capable multimodal model
         "name": "veo-2.0-generate-001",
         "inputs": ["text", "image" ],

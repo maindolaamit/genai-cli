@@ -5,7 +5,7 @@ import pathlib
 # File formats supported by the CLI
 FILE_FORMATS = {
     "image": ["png", "jpg", "jpeg", "gif"],
-    "text": ["txt", "csv", ".tsv", "json", "xml", "html", "css", "md", "mdx", "java", "cpp", "py", "rft", "sql", "yaml", "yml"],
+    "text": ["txt", "csv", ".tsv", "json", "xml", "html", "css", "md", "mdx", "java", "cpp", "py", "rft", "sql", "yaml", "yml","sh", "bash", "md"],
     "pdf": ["pdf"],
     "doc": [".doc", "docx", ".pptx", ".ppt",".xls", "xlsx"],
     "video": ["mp4", "avi", "mov"],
@@ -24,6 +24,13 @@ DOC_MIME_TYPES = {
     '.ppt': 'application/vnd.ms-powerpoint',
     '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     '.odt': 'application/vnd.oasis.opendocument.text', # Added ODT as an example
+    '.wav': 'audio/wav',
+    '.mp3': 'audio/mpeg',
+    '.mp4': 'video/mp4',
+    '.avi': 'video/x-msvideo',
+    '.mov': 'video/quicktime',
+    '.pdf': 'application/pdf',
+    '.txt': 'text/plain',
     # Add other document types as needed
 }
 
